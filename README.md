@@ -62,6 +62,17 @@ ztarc-cli status
 ztarc-cli down
 ```
 
+Set `ZTARC_CONSOLE_URL` to change the default console without rebuilding:
+
+```sh
+export ZTARC_CONSOLE_URL=https://console.example.com
+ztarc-cli login
+```
+
+An explicit login URL or the saved host when logging back into the same account
+takes precedence. If the variable is unset or blank, the default remains
+`https://console.ztarc.io`. Hosts without a scheme use HTTPS.
+
 The native API adapter in ZTARC Console must be implemented before production
 login acceptance. CLI accounts live in `~/.config/ztarc-cli`; no desktop account,
 token, or socket is imported. Deferred commands are labelled in help and reject

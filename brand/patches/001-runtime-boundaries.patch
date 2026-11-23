@@ -1,5 +1,13 @@
 --- a/cmd/auth/login/login.go
 +++ b/cmd/auth/login/login.go
+@@ -13,6 +13,7 @@
+ 	"github.com/fosrl/cli/internal/api"
+ 	"github.com/fosrl/cli/internal/companion"
+ 	"github.com/fosrl/cli/internal/config"
++	"github.com/fosrl/cli/internal/endpoint"
+ 	"github.com/fosrl/cli/internal/logger"
+ 	"github.com/fosrl/cli/internal/utils"
+ 	"github.com/muesli/cancelreader"
 @@ -310,48 +310,7 @@
  		}
  	}
@@ -46,7 +54,7 @@
 -			hostname = "app.pangolin.net"
 -		}
 -	}
-+ if hostname == "" { hostname = "https://console.ztarc.io" }
++ if hostname == "" { hostname = endpoint.DefaultURL() }
  
  	// Normalize hostname (preserve protocol, remove trailing slash)
  	hostname = strings.TrimSuffix(hostname, "/")
@@ -750,6 +758,14 @@
  	"fmt"
  	"io"
  	"net/http"
+@@ -14,6 +14,7 @@
+ 	"time"
+ 
+ 	"github.com/fosrl/cli/internal/config"
++	"github.com/fosrl/cli/internal/endpoint"
+ 	"github.com/fosrl/cli/internal/version"
+ 	yaml "go.yaml.in/yaml/v3"
+ )
 @@ -30,7 +30,8 @@
  
  // NewClient creates a new API client with the provided configuration
@@ -813,12 +829,20 @@
  	return &response, nil
 --- a/internal/api/global.go
 +++ b/internal/api/global.go
+@@ -2,6 +2,7 @@
+ 
+ import (
+ 	"fmt"
++	"github.com/fosrl/cli/internal/endpoint"
+ 	"strings"
+ )
+ 
 @@ -11,7 +11,8 @@
  // when non-empty (see Config.SessionCookieName).
  func InitClient(hostname string, token string, sessionCookieName string) (*Client, error) {
  	// Build base URL (hostname should already include protocol from login)
 -	baseURL := hostname
-+	if hostname == "" { hostname = "https://console.ztarc.io" }
++	if hostname == "" { hostname = endpoint.DefaultURL() }
 + baseURL := hostname
  	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
  		// If no protocol, default to https
@@ -1112,15 +1136,24 @@
  	recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, fp.PlatformFingerprint)
 --- a/internal/utils/config.go
 +++ b/internal/utils/config.go
-@@ -4,7 +4,7 @@
- 	"strings"
- )
+@@ -2,15 +2,14 @@
  
+ import (
+ 	"strings"
++	"github.com/fosrl/cli/internal/endpoint"
+ )
+-
 -const defaultHostname = "app.pangolin.net"
-+const defaultHostname = "console.ztarc.io"
  
  // FormatHostnameBaseURL returns the hostname formatted as a base URL (with protocol, without /api/v1).
  // This is useful for constructing URLs to the web interface.
+ func FormatHostnameBaseURL(hostname string) string {
+ 	if hostname == "" {
+-		hostname = defaultHostname
++		hostname = endpoint.DefaultURL()
+ 	}
+ 
+ 	// Ensure hostname has protocol
 --- a/internal/version/check.go
 +++ b/internal/version/check.go
 @@ -1,95 +1,8 @@
