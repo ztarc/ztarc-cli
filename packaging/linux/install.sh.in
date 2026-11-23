@@ -18,9 +18,12 @@ mkdir -p /run/ztarc-cli-install
 exec 9>/run/ztarc-cli-install/lock
 flock -n 9 || { echo 'Another installation is running.' >&2; exit 1; }
 [ ! -L /usr/local/bin ] && [ ! -L /usr/local/bin/ztarc-cli ] || { echo 'Refusing symlink destination.' >&2; exit 1; }
-mkdir -p /usr/local/bin
+# Create one component at a time: mkdir -p under umask 077 would hide
+# missing public parents from ordinary users. Preserve existing directory modes.
 for dir in /usr /usr/local /usr/local/bin; do
- [ ! -L "$dir" ] && [ "$(stat -c '%u' "$dir")" = 0 ] || { echo 'Unsafe binary destination.' >&2; exit 1; }
+ [ ! -L "$dir" ] || { echo 'Unsafe binary destination.' >&2; exit 1; }
+ if [ ! -e "$dir" ]; then mkdir -m 0755 "$dir"; fi
+ [ -d "$dir" ] && [ "$(stat -c '%u' "$dir")" = 0 ] || { echo 'Unsafe binary destination.' >&2; exit 1; }
  perms=$(stat -c '%a' "$dir")
  case "$perms" in *[2367][0-7]|*[0-7][2367]) echo 'Writable binary destination.' >&2; exit 1;; esac
 done

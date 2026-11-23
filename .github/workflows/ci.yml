@@ -16,6 +16,13 @@ jobs:
           persist-credentials: false
       - name: Test staged source and pipeline
         run: make test
+      - name: Test fresh installation as root in an isolated container
+        env:
+          ZTARC_INSTALLER_CONTAINER_TESTS: '1'
+          ZTARC_INSTALLER_TEST_IMAGE: ubuntu:24.04@sha256:2198e4c65076e9cb0b3d695219df667c0e3b0072da64ca3c2648aca17dcecaf5
+        run: |
+          docker pull "$ZTARC_INSTALLER_TEST_IMAGE"
+          python3 -m unittest discover -s tests -p test_installer.py -v
       - name: Build both architectures and package
         run: make package
       - name: Smoke test metadata and guards
