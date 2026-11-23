@@ -1,0 +1,722 @@
+[
+  {
+    "path": "main.go",
+    "from": "`pangolin service install`",
+    "to": "`ztarc-cli service install`",
+    "count": 1
+  },
+  {
+    "path": "cmd/root.go",
+    "from": "\"pangolin\"",
+    "to": "\"ztarc-cli\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/root.go",
+    "from": "\"Pangolin CLI\"",
+    "to": "\"ZTARC CLI\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/root.go",
+    "from": "\"failed to create pangolin configuration directory: %v\"",
+    "to": "\"failed to create ztarc-cli configuration directory: %v\"",
+    "count": 1
+  },
+  {
+    "path": "internal/api/client.go",
+    "from": "\"https://app.pangolin.net\"",
+    "to": "\"https://console.ztarc.io\"",
+    "count": 2
+  },
+  {
+    "path": "internal/companion/state.go",
+    "from": "\"Start %s (version %s or later) and log in, or run 'pangolin companion disable'.\"",
+    "to": "\"Start %s (version %s or later) and log in, or run 'ztarc-cli companion disable'.\"",
+    "count": 1
+  },
+  {
+    "path": "internal/companion/state.go",
+    "from": "\"Start %s and log in, or run 'pangolin companion disable'.\"",
+    "to": "\"Start %s and log in, or run 'ztarc-cli companion disable'.\"",
+    "count": 1
+  },
+  {
+    "path": "internal/companion/state.go",
+    "from": "\"To use standalone CLI auth, run 'pangolin companion disable'.\"",
+    "to": "\"To use standalone CLI auth, run 'ztarc-cli companion disable'.\"",
+    "count": 1
+  },
+  {
+    "path": "internal/config/accounts.go",
+    "from": "`pangolin up`",
+    "to": "`ztarc-cli up`",
+    "count": 1
+  },
+  {
+    "path": "internal/config/config.go",
+    "from": "\"PANGOLIN_CLI\"",
+    "to": "\"ZTARC_CLI\"",
+    "count": 1
+  },
+  {
+    "path": "internal/config/config.go",
+    "from": "\".config\", \"pangolin\"",
+    "to": "\".config\", \"ztarc-cli\"",
+    "count": 1
+  },
+  {
+    "path": "internal/config/config.go",
+    "from": "\"/tmp/olm.log\"",
+    "to": "\"/var/log/ztarc-cli.log\"",
+    "count": 1
+  },
+  {
+    "path": "internal/config/config.go",
+    "from": "`pangolin up`",
+    "to": "`ztarc-cli up`",
+    "count": 4
+  },
+  {
+    "path": "internal/config/effective.go",
+    "from": "`pangolin up`",
+    "to": "`ztarc-cli up`",
+    "count": 3
+  },
+  {
+    "path": "internal/config/effective.go",
+    "from": "`pangolin select exit-node`",
+    "to": "`ztarc-cli select exit-node`",
+    "count": 2
+  },
+  {
+    "path": "internal/notice/notices.go",
+    "from": "\"Run 'pangolin companion status' for details.\"",
+    "to": "\"Run 'ztarc-cli companion status' for details.\"",
+    "count": 1
+  },
+  {
+    "path": "internal/notice/notices.go",
+    "from": "\"To use standalone CLI authentication, run 'pangolin companion disable'.\"",
+    "to": "\"To use standalone CLI authentication, run 'ztarc-cli companion disable'.\"",
+    "count": 1
+  },
+  {
+    "path": "internal/notice/notices.go",
+    "from": "\"Pangolin CLI now uses companion mode with \"",
+    "to": "\"ZTARC CLI now uses companion mode with \"",
+    "count": 1
+  },
+  {
+    "path": "internal/olm/client_unix.go",
+    "from": "`pangolin up client`",
+    "to": "`ztarc-cli up client`",
+    "count": 1
+  },
+  {
+    "path": "internal/olm/client_windows.go",
+    "from": "`pangolin up client`",
+    "to": "`ztarc-cli up client`",
+    "count": 2
+  },
+  {
+    "path": "internal/olm/client_windows.go",
+    "from": "`pangolin service install client`",
+    "to": "`ztarc-cli service install client`",
+    "count": 1
+  },
+  {
+    "path": "internal/svcmgr/clientservice_windows.go",
+    "from": "`pangolin up client --attach`",
+    "to": "`ztarc-cli up client --attach`",
+    "count": 1
+  },
+  {
+    "path": "internal/svcmgr/clientservice_windows.go",
+    "from": "`pangolin service logs`",
+    "to": "`ztarc-cli service logs`",
+    "count": 1
+  },
+  {
+    "path": "internal/svcmgr/svcmgr.go",
+    "from": "\"pangolin-site\"",
+    "to": "\"ztarc-site\"",
+    "count": 2
+  },
+  {
+    "path": "internal/svcmgr/svcmgr.go",
+    "from": "\"pangolin-client\"",
+    "to": "\"ztarc-client\"",
+    "count": 2
+  },
+  {
+    "path": "internal/svcmgr/svcmgr.go",
+    "from": "`pangolin up site`",
+    "to": "`ztarc-cli up site`",
+    "count": 1
+  },
+  {
+    "path": "internal/svcmgr/svcmgr.go",
+    "from": "`pangolin up client`",
+    "to": "`ztarc-cli up client`",
+    "count": 1
+  },
+  {
+    "path": "internal/svcmgr/svcmgr.go",
+    "from": "`pangolin up ...`",
+    "to": "`ztarc-cli up ...`",
+    "count": 1
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_notwindows.go",
+    "from": "`pangolin up ...`",
+    "to": "`ztarc-cli up ...`",
+    "count": 1
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_windows.go",
+    "from": "`pangolin up ...`",
+    "to": "`ztarc-cli up ...`",
+    "count": 2
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_windows.go",
+    "from": "\"service %s already exists; run 'pangolin service uninstall' first to reinstall it\"",
+    "to": "\"service %s already exists; run 'ztarc-cli service uninstall' first to reinstall it\"",
+    "count": 1
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_windows.go",
+    "from": "`pangolin up site`",
+    "to": "`ztarc-cli up site`",
+    "count": 1
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_windows.go",
+    "from": "`pangolin up client --attach`",
+    "to": "`ztarc-cli up client --attach`",
+    "count": 1
+  },
+  {
+    "path": "internal/utils/exitnode.go",
+    "from": "`pangolin select exit-node`",
+    "to": "`ztarc-cli select exit-node`",
+    "count": 1
+  },
+  {
+    "path": "internal/utils/exitnode.go",
+    "from": "\"Saved exit node no longer exists; not using it. Run 'pangolin select exit-node' and choose None to forget it\"",
+    "to": "\"Saved exit node no longer exists; not using it. Run 'ztarc-cli select exit-node' and choose None to forget it\"",
+    "count": 1
+  },
+  {
+    "path": "internal/utils/org.go",
+    "from": "\"Switch accounts or organizations in %s to change its connection, or run 'pangolin companion enable' to have the CLI use %s's account and organization.\"",
+    "to": "\"Switch accounts or organizations in %s to change its connection, or run 'ztarc-cli companion enable' to have the CLI use %s's account and organization.\"",
+    "count": 1
+  },
+  {
+    "path": "internal/version/cache.go",
+    "from": "\"failed to get pangolin config directory: %w\"",
+    "to": "\"failed to get ztarc-cli config directory: %w\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/apply/apply.go",
+    "from": "\"Apply resources to the Pangolin server\"",
+    "to": "\"Apply resources to the ZTARC server\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/companion/companion_desktop.go",
+    "from": "\"This takes effect on the next pangolin command.\"",
+    "to": "\"This takes effect on the next ztarc-cli command.\"",
+    "count": 2
+  },
+  {
+    "path": "cmd/companion/companion_desktop.go",
+    "from": "\"Manage companion mode with the Pangolin desktop app\"",
+    "to": "\"Manage companion mode with the ZTARC desktop app\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/companion/companion_desktop.go",
+    "from": "\"Enable or disable companion mode, which uses the Pangolin desktop app for authentication.\"",
+    "to": "\"Enable or disable companion mode, which uses the ZTARC desktop app for authentication.\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/config/config.go",
+    "from": "\"Organization %s %s; some settings are managed by its server (see `pangolin config effective`)\"",
+    "to": "\"Organization %s %s; some settings are managed by its server (see `ztarc-cli config effective`)\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/config/config.go",
+    "from": "`\n\nPer-organization only:\n  up.exit_node_resource_id\n\nExamples:\n  pangolin config set up.tunnel_dns true\n  pangolin config set up.upstream_dns 10.0.0.53\n  pangolin config set up.upstream_dns 10.0.0.53,10.0.0.54\n  pangolin config set up.mtu 1400 --org my-org\n`",
+    "to": "`\n\nPer-organization only:\n  up.exit_node_resource_id\n\nExamples:\n  ztarc-cli config set up.tunnel_dns true\n  ztarc-cli config set up.upstream_dns 10.0.0.53\n  ztarc-cli config set up.upstream_dns 10.0.0.53,10.0.0.54\n  ztarc-cli config set up.mtu 1400 --org my-org\n`",
+    "count": 1
+  },
+  {
+    "path": "cmd/config/effective.go",
+    "from": "\"`pangolin up`\"",
+    "to": "\"`ztarc-cli up`\"",
+    "count": 2
+  },
+  {
+    "path": "cmd/config/effective.go",
+    "from": "\"`pangolin select exit-node`\"",
+    "to": "\"`ztarc-cli select exit-node`\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/configure/codex.go",
+    "from": "\"Pangolin AI Gateway\"",
+    "to": "\"ZTARC AI Gateway\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/configure/configure.go",
+    "from": "\"Configure a local AI client to use a Pangolin AI gateway resource\"",
+    "to": "\"Configure a local AI client to use a ZTARC AI gateway resource\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/configure/configure.go",
+    "from": "\"Writes local config files (e.g. ~/.claude/settings.json) so an AI client talks to a Pangolin\\n\"",
+    "to": "\"Writes local config files (e.g. ~/.claude/settings.json) so an AI client talks to a ZTARC\\n\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/configure/configure.go",
+    "from": "\"No Pangolin configuration found for %s; nothing to remove\"",
+    "to": "\"No ZTARC configuration found for %s; nothing to remove\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/configure/configure.go",
+    "from": "\"Removed Pangolin configuration for %s\"",
+    "to": "\"Removed ZTARC configuration for %s\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/resetdns/resetdns_unix.go",
+    "from": "\"pangolin\"",
+    "to": "\"ztarc\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/resetdns/resetdns_unix.go",
+    "from": "`pangolin reset-dns`",
+    "to": "`ztarc-cli reset-dns`",
+    "count": 1
+  },
+  {
+    "path": "cmd/resetdns/resetdns_unix.go",
+    "from": "\"a client is currently running; stop it first with 'pangolin down' or rerun with --force\"",
+    "to": "\"a client is currently running; stop it first with 'ztarc-cli down' or rerun with --force\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/scp/scp.go",
+    "from": "\"scp requires at least one remote operand; example: pangolin scp ./local-file my-server.internal:/remote/path\"",
+    "to": "\"scp requires at least one remote operand; example: ztarc-cli scp ./local-file my-server.internal:/remote/path\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/scp/scp.go",
+    "from": "`Run scp(1) in the terminal. Generates a key pair and signs it just-in-time, then executes the system OpenSSH scp client.\n\nUse the resource alias or identifier as the host in remote operands, exactly as you would with regular scp.\nThe resource alias is resolved to the connected hostname transparently.\nExamples:\n  pangolin scp ./local-file my-server.internal:/remote/path\n  pangolin scp my-server.internal:/var/log/syslog ./syslog\n  pangolin scp -r ./dir my-server.internal:~/\n\nSet PANGOLIN_SCP_BINARY to the full path of scp(1) to override PATH lookup on all platforms.`",
+    "to": "`Run scp(1) in the terminal. Generates a key pair and signs it just-in-time, then executes the system OpenSSH scp client.\n\nUse the resource alias or identifier as the host in remote operands, exactly as you would with regular scp.\nThe resource alias is resolved to the connected hostname transparently.\nExamples:\n  ztarc-cli scp ./local-file my-server.internal:/remote/path\n  ztarc-cli scp my-server.internal:/var/log/syslog ./syslog\n  ztarc-cli scp -r ./dir my-server.internal:~/\n\nSet PANGOLIN_SCP_BINARY to the full path of scp(1) to override PATH lookup on all platforms.`",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/client.go",
+    "from": "`Install a background service for this machine client, then start it\nimmediately.\n\nIntended for machine clients (--id/--secret), which don't have an\ninteractively logged-in user to restart them. The service runs\n'pangolin up client --attach' on every platform (on Windows inside the\nservice process itself).`",
+    "to": "`Install a background service for this machine client, then start it\nimmediately.\n\nIntended for machine clients (--id/--secret), which don't have an\ninteractively logged-in user to restart them. The service runs\n'ztarc-cli up client --attach' on every platform (on Windows inside the\nservice process itself).`",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/client.go",
+    "from": "\"Runs 'pangolin up client' persistently in the background\"",
+    "to": "\"Runs 'ztarc-cli up client' persistently in the background\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/client.go",
+    "from": "\"Check status with 'pangolin service status client' or follow logs with 'pangolin service logs client -f'\"",
+    "to": "\"Check status with 'ztarc-cli service status client' or follow logs with 'ztarc-cli service logs client -f'\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/client.go",
+    "from": "\"Pangolin Client\"",
+    "to": "\"ZTARC Client\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/client.go",
+    "from": "\"Pangolin server endpoint\"",
+    "to": "\"ZTARC server endpoint\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/service.go",
+    "from": "`pangolin service`",
+    "to": "`ztarc-cli service`",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/service.go",
+    "from": "`pangolin up site`",
+    "to": "`ztarc-cli up site`",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/service.go",
+    "from": "`pangolin up client`",
+    "to": "`ztarc-cli up client`",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/service.go",
+    "from": "`Install, remove, and monitor background services that run 'pangolin up site'\nor 'pangolin up client' persistently, restarting them automatically if they\ncrash or the machine reboots.\n\nBacked by systemd on Linux, launchd on macOS, and a Windows Service on\nWindows. Must be run as root (Linux/macOS) or from an elevated prompt\n(Windows). The client (machine client) service isn't available on Windows\nyet, since 'pangolin up client' itself doesn't support Windows.`",
+    "to": "`Install, remove, and monitor background services that run 'ztarc-cli up site'\nor 'ztarc-cli up client' persistently, restarting them automatically if they\ncrash or the machine reboots.\n\nBacked by systemd on Linux, launchd on macOS, and a Windows Service on\nWindows. Must be run as root (Linux/macOS) or from an elevated prompt\n(Windows). The client (machine client) service isn't available on Windows\nyet, since 'ztarc-cli up client' itself doesn't support Windows.`",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/site.go",
+    "from": "\"Runs 'pangolin up site' persistently in the background\"",
+    "to": "\"Runs 'ztarc-cli up site' persistently in the background\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/site.go",
+    "from": "\"Check status with 'pangolin service status site' or follow logs with 'pangolin service logs site -f'\"",
+    "to": "\"Check status with 'ztarc-cli service status site' or follow logs with 'ztarc-cli service logs site -f'\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/site.go",
+    "from": "\"Path to a newt config file passed through to 'pangolin up site'\"",
+    "to": "\"Path to a newt config file passed through to 'ztarc-cli up site'\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/site.go",
+    "from": "\"Pangolin Site (Newt)\"",
+    "to": "\"ZTARC Site (Newt)\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/site.go",
+    "from": "\"Pangolin server endpoint (required unless --config-file is set)\"",
+    "to": "\"ZTARC server endpoint (required unless --config-file is set)\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/service/site.go",
+    "from": "\"Disable Pangolin SSH\"",
+    "to": "\"Disable ZTARC SSH\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/ssh/openssh_passthrough.go",
+    "from": "\"pangolin ssh <res> ...\"",
+    "to": "\"ztarc-cli ssh <res> ...\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/ssh/ssh.go",
+    "from": "\"Resource (alias or identifier) is required; example: pangolin ssh my-server.internal or pangolin ssh user@my-server.internal\"",
+    "to": "\"Resource (alias or identifier) is required; example: ztarc-cli ssh my-server.internal or ztarc-cli ssh user@my-server.internal\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/ssh/ssh.go",
+    "from": "`Run an SSH client in the terminal. Generates a key pair and signs it just-in-time, then connects to the target resource.\n\nBy default the system OpenSSH client is used on every platform. You can pass the same options as ssh(1) after the resource name (for example port forwards: -L, -R, -D, and -N), then an optional remote command. Example: pangolin ssh <resource> -L 8080:127.0.0.1:80 -N\n\nSet PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on all platforms.`",
+    "to": "`Run an SSH client in the terminal. Generates a key pair and signs it just-in-time, then connects to the target resource.\n\nBy default the system OpenSSH client is used on every platform. You can pass the same options as ssh(1) after the resource name (for example port forwards: -L, -R, -D, and -N), then an optional remote command. Example: ztarc-cli ssh <resource> -L 8080:127.0.0.1:80 -N\n\nSet PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on all platforms.`",
+    "count": 1
+  },
+  {
+    "path": "cmd/update/update_unix.go",
+    "from": "\"Update Pangolin CLI to the latest version\"",
+    "to": "\"Update ZTARC CLI to the latest version\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/update/update_unix.go",
+    "from": "\"Update Pangolin CLI to the latest version by downloading and running the installation script\"",
+    "to": "\"Update ZTARC CLI to the latest version by downloading and running the installation script\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/update/update_unix.go",
+    "from": "\"Updating Pangolin CLI...\"",
+    "to": "\"Updating ZTARC CLI...\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/update/update_unix.go",
+    "from": "\"Failed to update Pangolin CLI: %v\"",
+    "to": "\"Failed to update ZTARC CLI: %v\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/update/update_unix.go",
+    "from": "\"Pangolin CLI updated successfully!\"",
+    "to": "\"ZTARC CLI updated successfully!\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/update/update_windows.go",
+    "from": "\"Update Pangolin CLI to the latest version\"",
+    "to": "\"Update ZTARC CLI to the latest version\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/update/update_windows.go",
+    "from": "\"Update Pangolin CLI to the latest version by downloading the new installer from GitHub\"",
+    "to": "\"Update ZTARC CLI to the latest version by downloading the new installer from GitHub\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/update/update_windows.go",
+    "from": "\"Checking for latest Pangolin CLI Windows installer...\"",
+    "to": "\"Checking for latest ZTARC CLI Windows installer...\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/version/version.go",
+    "from": "\"Run 'pangolin update' to update to the latest version\"",
+    "to": "\"Run 'ztarc-cli update' to update to the latest version\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/watchdog/watchdog_unix.go",
+    "from": "\"pangolin\"",
+    "to": "\"ztarc\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/watchdog/watchdog_unix.go",
+    "from": "`pangolin watchdog`",
+    "to": "`ztarc-cli watchdog`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "\"pangolin\"",
+    "to": "\"ztarc\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "`Bring up a client tunneled connection.\n\nOn Windows, only machine clients are supported: --id, --secret, and\n--endpoint must all be passed explicitly. Interactive login isn't\nsupported - use the desktop app for that. Without --attach, instead of a\nbackground process this installs the same service 'pangolin service\ninstall client' would, with the settings resolved for this run, tails its\nlogs, and removes the service again when you press Ctrl+C. --attach only\nworks under that service: olm creates its tunnel interface only inside a\nWindows service.`",
+    "to": "`Bring up a client tunneled connection.\n\nOn Windows, only machine clients are supported: --id, --secret, and\n--endpoint must all be passed explicitly. Interactive login isn't\nsupported - use the desktop app for that. Without --attach, instead of a\nbackground process this installs the same service 'ztarc-cli service\ninstall client' would, with the settings resolved for this run, tails its\nlogs, and removes the service again when you press Ctrl+C. --attach only\nworks under that service: olm creates its tunnel interface only inside a\nWindows service.`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "`pangolin up client`",
+    "to": "`ztarc-cli up client`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "\"Exit node `NICE-ID` to route all traffic through for this connection, overriding the exit node saved by 'pangolin select exit-node'. Requires being logged in\"",
+    "to": "\"Exit node `NICE-ID` to route all traffic through for this connection, overriding the exit node saved by 'ztarc-cli select exit-node'. Requires being logged in\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "\"Site IDs to route all traffic through as an exit node (default: the exit node saved by 'pangolin select exit-node', if any). Requires --exit-node-resource-id\"",
+    "to": "\"Site IDs to route all traffic through as an exit node (default: the exit node saved by 'ztarc-cli select exit-node', if any). Requires --exit-node-resource-id\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "\"To run the tunnel from the CLI, pass --id and --secret, or run 'pangolin companion disable'.\"",
+    "to": "\"To run the tunnel from the CLI, pass --id and --secret, or run 'ztarc-cli companion disable'.\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "`pangolin up`",
+    "to": "`ztarc-cli up`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "\"Error: %v. Run `pangolin login` to login\"",
+    "to": "\"Error: %v. Run `ztarc-cli login` to login\"",
+    "count": 2
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "\"Run `pangolin select org` to select an organization or pass --org [id] to the command\"",
+    "to": "\"Run `ztarc-cli select org` to select an organization or pass --org [id] to the command\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "\"sudo pangolin up\"",
+    "to": "\"sudo ztarc-cli up\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "`pangolin up client --attach`",
+    "to": "`ztarc-cli up client --attach`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "\"When enabled, the client uses custom DNS servers to resolve internal resources and aliases. This overrides your system's default DNS settings. Queries that cannot be resolved as a Pangolin resource will be forwarded to your configured Upstream DNS Server.\"",
+    "to": "\"When enabled, the client uses custom DNS servers to resolve internal resources and aliases. This overrides your system's default DNS settings. Queries that cannot be resolved as a ZTARC resource will be forwarded to your configured Upstream DNS Server.\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "from": "\"When enabled, DNS queries are routed through the tunnel for remote resolution. To ensure queries are tunneled correctly, you must define the DNS server as a Pangolin resource and enter its address as an Upstream DNS Server.\"",
+    "to": "\"When enabled, DNS queries are routed through the tunnel for remote resolution. To ensure queries are tunneled correctly, you must define the DNS server as a ZTARC resource and enter its address as an Upstream DNS Server.\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/service_windows.go",
+    "from": "`pangolin up client`",
+    "to": "`ztarc-cli up client`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/service_windows.go",
+    "from": "`pangolin service install client`",
+    "to": "`ztarc-cli service install client`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/service_windows.go",
+    "from": "`pangolin up client --attach`",
+    "to": "`ztarc-cli up client --attach`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/service_windows.go",
+    "from": "\"Runs 'pangolin up client' persistently in the background\"",
+    "to": "\"Runs 'ztarc-cli up client' persistently in the background\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/service_windows.go",
+    "from": "\"Use the pangolin service install client command to make it run permanently.\"",
+    "to": "\"Use the ztarc-cli service install client command to make it run permanently.\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/service_windows.go",
+    "from": "\"on Windows, --attach only works under the client service; run without --attach, or use 'pangolin service install client'\"",
+    "to": "\"on Windows, --attach only works under the client service; run without --attach, or use 'ztarc-cli service install client'\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/client/service_windows.go",
+    "from": "\"Pangolin Client\"",
+    "to": "\"ZTARC Client\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/site/site.go",
+    "from": "`pangolin up site`",
+    "to": "`ztarc-cli up site`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/site/site.go",
+    "from": "`pangolin up site --help`",
+    "to": "`ztarc-cli up site --help`",
+    "count": 1
+  },
+  {
+    "path": "cmd/up/site/site.go",
+    "from": "`Bring up a site tunnel using Newt, embedded directly in the Pangolin CLI.\n\nThis accepts the same flags and environment variables as the standalone\nnewt binary. Run 'pangolin up site --help' to see them.`",
+    "to": "`Bring up a site tunnel using Newt, embedded directly in the ZTARC CLI.\n\nThis accepts the same flags and environment variables as the standalone\nnewt binary. Run 'ztarc-cli up site --help' to see them.`",
+    "count": 1
+  },
+  {
+    "path": "cmd/status/client/client.go",
+    "from": "\"Pangolin Server\"",
+    "to": "\"ZTARC Server\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/select/account/account.go",
+    "from": "\"Pangolin host where account is located\"",
+    "to": "\"ZTARC host where account is located\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/select/exitnode/exitnode.go",
+    "from": "`List the exit nodes in your organization and select one to route all\ntunnel traffic (full tunnel) through the sites backing it.\n\nWhile an exit node is active, a \"None\" option is shown to turn it off.\n\nWith a running client the change takes effect immediately. Without one, the\nchoice is saved and applied the next time you run 'pangolin up'.`",
+    "to": "`List the exit nodes in your organization and select one to route all\ntunnel traffic (full tunnel) through the sites backing it.\n\nWhile an exit node is active, a \"None\" option is shown to turn it off.\n\nWith a running client the change takes effect immediately. Without one, the\nchoice is saved and applied the next time you run 'ztarc-cli up'.`",
+    "count": 1
+  },
+  {
+    "path": "cmd/select/exitnode/exitnode.go",
+    "from": "`pangolin up`",
+    "to": "`ztarc-cli up`",
+    "count": 2
+  },
+  {
+    "path": "cmd/select/exitnode/exitnode.go",
+    "from": "\"Exit node %s saved; it will be used the next time you run 'pangolin up'\"",
+    "to": "\"Exit node %s saved; it will be used the next time you run 'ztarc-cli up'\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/down/client/client.go",
+    "from": "\"Client was not started by Pangolin CLI (version: %s)\"",
+    "to": "\"Client was not started by ZTARC CLI (version: %s)\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/auth/login/login.go",
+    "from": "\"Pangolin CLI\"",
+    "to": "\"ZTARC CLI\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/auth/login/login.go",
+    "from": "\"Login to Pangolin\"",
+    "to": "\"Login to ZTARC\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/auth/logout/logout.go",
+    "from": "\"Logout from Pangolin\"",
+    "to": "\"Logout from ZTARC\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/auth/logout/logout.go",
+    "from": "\"Logged out of Pangolin account %s\"",
+    "to": "\"Logged out of ZTARC account %s\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/auth/status/status.go",
+    "from": "\"Or run 'pangolin companion disable' to use standalone CLI auth\"",
+    "to": "\"Or run 'ztarc-cli companion disable' to use standalone CLI auth\"",
+    "count": 2
+  },
+  {
+    "path": "cmd/auth/status/status.go",
+    "from": "\"Run 'pangolin login' to authenticate\"",
+    "to": "\"Run 'ztarc-cli login' to authenticate\"",
+    "count": 1
+  },
+  {
+    "path": "cmd/apply/blueprint/blueprint.go",
+    "from": "\"Apply a YAML blueprint to the Pangolin server. --file may be a glob pattern (e.g. -f 'inference-*.yaml') or given multiple times; every matching file is applied one by one.\"",
+    "to": "\"Apply a YAML blueprint to the ZTARC server. --file may be a glob pattern (e.g. -f 'inference-*.yaml') or given multiple times; every matching file is applied one by one.\"",
+    "count": 1
+  }
+]

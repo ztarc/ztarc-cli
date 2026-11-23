@@ -1,0 +1,7 @@
+ZTARC CLI is a modified distribution of Pangolin CLI by Fossorial, Inc.
+Upstream: https://github.com/fosrl/cli
+Pinned source: bb03d2c45ce79213c4c9b206bbd87e9846be5a9a (0.23.0)
+Modifications: ZTARC branding, Linux namespaces, credential handling, service
+management, capability gates, manual updates, packaging and distribution tooling.
+Upstream copyright and license notices are preserved. See LICENSE and
+THIRD_PARTY_NOTICES. Corresponding source accompanies every release.

@@ -1,0 +1,302 @@
+[
+  {
+    "command": "ztarc-cli",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli apply",
+    "stage": "C",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli apply blueprint",
+    "stage": "C",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli auth",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli auth login",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli auth logout",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli auth status",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli auth-daemon",
+    "stage": "B",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli auth-daemon principals",
+    "stage": "B",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli companion",
+    "stage": "D",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli companion disable",
+    "stage": "D",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli companion enable",
+    "stage": "D",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli companion status",
+    "stage": "D",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli config",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli config effective",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli config get",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli config list",
+    "stage": "B",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli config path",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli config reset",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli config set",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli config show",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli config validate-site",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli configure",
+    "stage": "C",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli down",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli down client",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli list",
+    "stage": "B",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli list aliases",
+    "stage": "B",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli login",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli logout",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli logs",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli logs client",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli reset-dns",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli scp",
+    "stage": "B",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli select",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli select account",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli select exit-node",
+    "stage": "B",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli select org",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service install",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service install client",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service install site",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service logs",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service logs client",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service logs site",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service status",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service status client",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service status site",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service uninstall",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service uninstall client",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli service uninstall site",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli ssh",
+    "stage": "B",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli ssh sign",
+    "stage": "B",
+    "status": "deferred"
+  },
+  {
+    "command": "ztarc-cli status",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli status client",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli up",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli up client",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli up site",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli update",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli version",
+    "stage": "A",
+    "status": "not_tested"
+  },
+  {
+    "command": "ztarc-cli watchdog",
+    "stage": "A",
+    "status": "not_tested"
+  }
+]

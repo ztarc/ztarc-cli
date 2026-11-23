@@ -1,0 +1,1302 @@
+--- a/cmd/auth/login/login.go
++++ b/cmd/auth/login/login.go
+@@ -310,48 +310,7 @@
+ 		}
+ 	}
+ 
+-	// If hostname was provided, skip hosting option selection
+-	if hostname == "" {
+-		var hostingOption HostingOption
+-
+-		// First question: select hosting option
+-		form := huh.NewForm(
+-			huh.NewGroup(
+-				huh.NewSelect[HostingOption]().
+-					Title("Select your hosting option").
+-					Options(
+-						huh.NewOption("Pangolin Cloud (app.pangolin.net)", HostingOptionCloud),
+-						huh.NewOption("Self-hosted or Dedicated instance", HostingOptionSelfHosted),
+-					).
+-					Value(&hostingOption),
+-			),
+-		)
+-
+-		if err := form.Run(); err != nil {
+-			logger.Error("Error: %v", err)
+-			return err
+-		}
+-
+-		// If self-hosted, prompt for hostname
+-		if hostingOption == HostingOptionSelfHosted {
+-			hostnameForm := huh.NewForm(
+-				huh.NewGroup(
+-					huh.NewInput().
+-						Title("Enter hostname URL").
+-						Placeholder("https://your-instance.example.com").
+-						Value(&hostname),
+-				),
+-			)
+-
+-			if err := hostnameForm.Run(); err != nil {
+-				logger.Error("Error: %v", err)
+-				return err
+-			}
+-		} else {
+-			// For cloud, set the default hostname
+-			hostname = "app.pangolin.net"
+-		}
+-	}
++ if hostname == "" { hostname = "https://console.ztarc.io" }
+ 
+ 	// Normalize hostname (preserve protocol, remove trailing slash)
+ 	hostname = strings.TrimSuffix(hostname, "/")
+@@ -395,7 +354,7 @@
+ 
+ 	// Re-use the current account entry in case it exists
+ 	// This preserves OLM credentials across logout/login cycles
+-	if account, exists := accountStore.Accounts[user.UserID]; exists {
++	if account, exists := accountStore.Accounts[user.UserID]; exists && account.Host == hostname {
+ 		newAccount = account
+ 	}
+ 
+@@ -404,7 +363,7 @@
+ 	newAccount.UserID = userID
+ 	newAccount.Email = user.Email
+ 	newAccount.Host = hostname
+-	newAccount.SessionToken = sessionToken
++	newAccount.SessionToken = apiClient.Session.SessionToken
+ 
+ 	// Update account with username and name from user data
+ 	if user.Username != nil {
+--- a/cmd/root.go
++++ b/cmd/root.go
+@@ -31,8 +31,7 @@
+ 	"github.com/fosrl/cli/internal/companion"
+ 	"github.com/fosrl/cli/internal/config"
+ 	"github.com/fosrl/cli/internal/logger"
+-	"github.com/fosrl/cli/internal/notice"
+-	versionpkg "github.com/fosrl/cli/internal/version"
++	"github.com/fosrl/cli/internal/policy"
+ 	"github.com/spf13/cobra"
+ )
+ 
+@@ -63,7 +62,9 @@
+ 	}
+ 	cmd.AddCommand(selectcmd.SelectCmd())
+ 	cmd.AddCommand(list.ListCmd())
+-	cmd.AddCommand(configcmd.ConfigCmd())
++	configCommand := configcmd.ConfigCmd()
++ configCommand.AddCommand(policy.ValidateSiteCommand())
++ cmd.AddCommand(configCommand)
+ 	cmd.AddCommand(configure.ConfigureCmd())
+ 
+ 	// Platform-specific commands - nil on unsupported platforms
+@@ -94,7 +95,10 @@
+ 	cmd.AddCommand(login.LoginCmd())
+ 	cmd.AddCommand(logout.LogoutCmd())
+ 
+-	if !initResources {
++	var labelDeferred func(*cobra.Command)
++ labelDeferred = func(c *cobra.Command) { if policy.Guard(c)!=nil { c.Short += " [deferred]" }; for _,child:=range c.Commands(){labelDeferred(child)} }
++ labelDeferred(cmd)
++ if !initResources {
+ 		return cmd, nil
+ 	}
+ 
+@@ -117,6 +121,8 @@
+ }
+ 
+ func commandNeedsAuthInit(cmd *cobra.Command) bool {
++ if cmd.Name() == "version" || cmd.Name() == "update" { return false }
++ if (cmd.Name() == "client" || cmd.Name() == "up") && hasMachineClientCredentials(cmd) { return false }
+ 	// `up site` runs Newt standalone, exactly like the newt binary itself -
+ 	// it takes its own id/secret/endpoint and never needs a Pangolin
+ 	// account or the companion daemon.
+@@ -169,7 +175,8 @@
+ // client credentials, by flag or by the environment variables its PreRunE
+ // falls back to (which the service sets).
+ func hasMachineClientCredentials(cmd *cobra.Command) bool {
+-	id := os.Getenv("PANGOLIN_CLIENT_ID")
++	if f := cmd.Flags().Lookup("credentials-file"); f != nil && f.Value.String() != "" { return true }
++ id := os.Getenv("PANGOLIN_CLIENT_ID")
+ 	secret := os.Getenv("PANGOLIN_CLIENT_SECRET")
+ 	if f := cmd.Flags().Lookup("id"); f != nil && f.Changed {
+ 		id = f.Value.String()
+@@ -212,21 +219,27 @@
+ 		return ctx, err
+ 	}
+ 
+-	ctx = api.WithAPIClient(ctx, client)
++	client.OnSessionToken = func(oldToken,token string) error {
++  account, err := accountStore.ActiveAccount(); if err != nil { return err }
++  if account.SessionToken != oldToken { return nil }
++  account.SessionToken=token
++  accountStore.Accounts[account.UserID]=*account
++  return accountStore.Save()
++ }
++ ctx = api.WithAPIClient(ctx, client)
+ 	ctx = config.WithAccountStore(ctx, accountStore)
+ 	ctx = companion.WithState(ctx, companionState)
+ 	return ctx, nil
+ }
+ 
+ func mainCommandPreRun(cmd *cobra.Command, args []string) error {
+-	cfg := config.ConfigFromContext(cmd.Context())
++	if err := policy.Guard(cmd); err != nil { return err }
++ cfg := config.ConfigFromContext(cmd.Context())
+ 	if cfg == nil {
+ 		return fmt.Errorf("configuration not loaded")
+ 	}
+ 
+-	if err := notice.ShowPending(cfg); err != nil {
+-		logger.Debug("Failed to show pending notices: %v", err)
+-	}
++ if cmd.Name()=="version" || cmd.Name()=="update" { return nil }
+ 
+ 	if commandHasAncestor(cmd, "config") {
+ 		// Config commands must work without an account (or with the desktop
+@@ -251,26 +264,7 @@
+ 		}
+ 	}
+ 
+-	// Skip update checks when running self-update or companion commands.
+-	cmdName := cmd.Name()
+-	if cmdName == "update" || !commandNeedsAuthInit(cmd) {
+-		logger.Debug("Skipping update check for %q command", cmdName)
+-		return nil
+-	}
+-
+ 	ensureRuntimeDirs(cfg)
+-
+-	// Check for updates asynchronously
+-	if !cfg.DisableUpdateCheck {
+-		logger.Debug("Starting update check for %q command", cmdName)
+-		versionpkg.CheckForUpdateAsync(func(release *versionpkg.GitHubRelease) {
+-			logger.Warning("A new version is available: %s (current: %s)", release.TagName, versionpkg.Version)
+-			logger.Info("Run 'pangolin update' to update to the latest version")
+-			fmt.Println()
+-		})
+-	} else {
+-		logger.Debug("Update check disabled by configuration")
+-	}
+ 
+ 	return nil
+ }
+@@ -282,7 +276,7 @@
+ 	if err != nil {
+ 		logger.Warning("failed to create pangolin configuration directory: %v", err)
+ 	} else {
+-		err = os.MkdirAll(configDir, 0o755)
++		err = os.MkdirAll(configDir, 0o700)
+ 		if err != nil {
+ 			logger.Warning("failed to create %s: %v", configDir, err)
+ 		}
+@@ -291,7 +285,7 @@
+ 	if cfg.LogFile != "" {
+ 		logPathDirname := filepath.Dir(cfg.LogFile)
+ 
+-		err = os.MkdirAll(logPathDirname, 0o755)
++		err = os.MkdirAll(logPathDirname, 0o700)
+ 		if err != nil {
+ 			logger.Warning("failed to create %s: %v", logPathDirname, err)
+ 		}
+@@ -318,6 +312,7 @@
+ }
+ 
+ func Execute() {
++ if dispatchRuntime() { return }
+ 	cmd, err := RootCommand(true)
+ 	if err != nil {
+ 		logger.Error("%v", err)
+--- a/cmd/up/client/client.go
++++ b/cmd/up/client/client.go
+@@ -1,13 +1,13 @@
+ package client
+ 
+ import (
++ "github.com/fosrl/cli/internal/redact"
+ 	"context"
+ 	"errors"
+ 	"fmt"
+ 	"log"
+ 	"net"
+ 	"os"
+-	"os/exec"
+ 	"os/signal"
+ 	"path/filepath"
+ 	"runtime"
+@@ -23,9 +23,10 @@
+ 	"github.com/fosrl/cli/internal/logger"
+ 	"github.com/fosrl/cli/internal/olm"
+ 	"github.com/fosrl/cli/internal/tui"
++ "github.com/fosrl/cli/internal/securefile"
++ "github.com/fosrl/cli/internal/policy"
+ 	"github.com/fosrl/cli/internal/utils"
+ 	versionpkg "github.com/fosrl/cli/internal/version"
+-	newtLogger "github.com/fosrl/newt/logger"
+ 	olmpkg "github.com/fosrl/olm/olm"
+ 	"github.com/spf13/cobra"
+ )
+@@ -36,6 +37,10 @@
+ )
+ 
+ type ClientUpCmdOpts struct {
++ CredentialsFile string
++ UserToken string
++ RuntimeSnapshot bool
++ RuntimeUID int
+ 	ID                      string
+ 	Secret                  string
+ 	Endpoint                string
+@@ -138,7 +143,15 @@
+ 				return err
+ 			}
+ 
+-			// `--id` and `--secret` must be specified together
++			if opts.CredentialsFile != "" {
++    for _, name := range []string{"id","secret","endpoint","org"} { if cmd.Flags().Changed(name) { return errors.New("--credentials-file conflicts with explicit credential flags") } }
++    for _, name := range []string{"PANGOLIN_CLIENT_ID","PANGOLIN_CLIENT_SECRET","PANGOLIN_ENDPOINT","PANGOLIN_ORG"} { if os.Getenv(name)!="" { return errors.New("--credentials-file conflicts with credential environment") } }
++    c, err := securefile.ReadMachine(opts.CredentialsFile, false); if err != nil { return err }
++    opts.ID,opts.Secret,opts.Endpoint,opts.OrgID = c.ID,c.Secret,c.Endpoint,c.Org
++   }
++   if opts.HTTPAddr != "" { return errors.New("TCP control API is disabled; use the protected Unix socket") }
++ if err := policy.ClientFlags(cmd, opts.ExitNode, opts.GatewaySiteIDs, opts.SubnetRouter); err != nil { return err }
++   // `--id` and `--secret` must be specified together
+ 			if (opts.ID == "") != (opts.Secret == "") {
+ 				return errors.New("--id and --secret must be provided together")
+ 			}
+@@ -177,6 +190,7 @@
+ 	}
+ 
+ 	// Optional flags - if not provided, will use config or create new OLM
++ cmd.Flags().StringVar(&opts.CredentialsFile,"credentials-file","","Owner-only machine credential JSON file")
+ 	cmd.Flags().StringVar(&opts.ID, "id", "", "Client ID (optional, will use user info if not provided)")
+ 	cmd.Flags().StringVar(&opts.Secret, "secret", "", "Client secret (optional, will use user info if not provided)")
+ 
+@@ -453,8 +467,8 @@
+ }
+ 
+ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string) error {
+-	apiClient := api.FromContext(cmd.Context())
+-	accountStore := config.AccountStoreFromContext(cmd.Context())
++	apiClient, _ := api.ClientFromContext(cmd.Context())
++	accountStore, ok := config.LookupAccountStore(cmd.Context()); if !ok { accountStore = config.NewReadOnlyAccountStore("",nil) }
+ 	cfg := config.ConfigFromContext(cmd.Context())
+ 
+ 	// Fall back to the persisted config value when --match-domains wasn't
+@@ -487,12 +501,13 @@
+ 	// so continue even if not logged in.
+ 	olmID := opts.ID
+ 	olmSecret := opts.Secret
++ redact.Register(opts.Secret,opts.UserToken)
+ 
+ 	credentialsFromKeyring := olmID == "" && olmSecret == ""
+ 
+ 	// Set when we were spawned by a parent `pangolin up` that has already
+ 	// resolved settings and forwarded them as flags.
+-	isSubprocess := os.Getenv("PANGOLIN_SUBPROCESS") == "1"
++	isSubprocess := opts.RuntimeSnapshot
+ 
+ 	// Determine endpoint early
+ 	var endpoint string
+@@ -591,6 +606,7 @@
+ 		orgID = activeAccount.OrgID
+ 	}
+ 
++ if !opts.RuntimeSnapshot {
+ 	// Settings are resolved here, in the parent process, and forwarded to the
+ 	// subprocess as flags. A user session fetches them with the session; a
+ 	// machine client (--id/--secret) fetches them with its olm credentials.
+@@ -599,70 +615,31 @@
+ 	applyOrgConfig(cmd, opts, orgConfig)
+ 
+ 	var serverSettings *config.ClientSettings
+-	var machineExitNodeSiteIDs []int
+ 	if credentialsFromKeyring {
+ 		if activeAccount, err := accountStore.ActiveAccount(); err == nil {
+-			serverSettings = utils.RefreshClientSettings(apiClient.GetMyClientSettings, accountStore, activeAccount, orgID)
++			var err error
++   serverSettings, err = refreshStrict(apiClient.GetMyClientSettings, accountStore, activeAccount, orgID)
++   if err != nil { return err }
+ 		}
+ 	} else if !isSubprocess {
+ 		res, err := healthClient.GetOlmClientSettings(olmID, olmSecret, orgID)
++ if policyErr:=checkMachinePolicy(endpoint,olmID,orgID,nil,err);policyErr!=nil{return policyErr}
+ 		if err != nil {
+ 			// Nothing is cached for machine clients, so this connects with
+ 			// the local settings only.
+-			logger.Warning("Could not fetch client settings from the server (%v); using local settings", err)
++			if !policy.IsUnsupportedSettings(err) { return errors.New("cannot load machine client policy; refusing connection") }
++   logger.Warning("Managed client settings unsupported by server; using explicit local settings")
+ 		} else {
+ 			serverSettings = res.Settings
+-			machineExitNodeSiteIDs = res.ExitNodeSiteIDs
+ 		}
+ 	}
+ 	applyServerSettings(cmd, opts, serverSettings)
+ 
+-	// Same as match-domains: resolved here so it can be forwarded to the
+-	// subprocess, which may not have access to the user's config. Verified
+-	// against the server when we have a user session, so a deleted exit node
+-	// isn't applied. An exit node the server locks beats the exit node flags.
+-	exitNodeLocked := serverSettings.LockedExitNode() != 0
+-	if exitNodeLocked && (opts.ExitNode != "" || cmd.Flags().Changed("exit-node-site-ids")) {
+-		logger.Warning("Ignoring the exit node flags: the exit node is locked by your organization")
+-	}
+-	if !cmd.Flags().Changed("exit-node-site-ids") || exitNodeLocked {
+-		var list func(string) ([]api.SiteResource, error)
+-		savedResourceID := 0
+-		if credentialsFromKeyring {
+-			list = apiClient.ListGatewayResources
+-			if activeAccount, err := accountStore.ActiveAccount(); err == nil {
+-				savedResourceID = config.EffectiveExitNode(serverSettings, activeAccount.ExitNode(orgID), orgConfig)
+-			}
+-		}
+-		if opts.ExitNode != "" && !exitNodeLocked {
+-			// Overrides the saved exit node for this run only; the saved one
+-			// is left as is.
+-			var err error
+-			opts.GatewaySiteResourceID, opts.GatewaySiteIDs, err = resolveExitNodeByNiceID(opts.ExitNode, orgID, list)
+-			if err != nil {
+-				logger.Error("Error: %v", err)
+-				return err
+-			}
+-		} else if resourceID := config.EffectiveExitNode(serverSettings, 0, orgConfig); !credentialsFromKeyring && serverSettings != nil && resourceID != 0 && resourceID == serverSettings.ExitNodeSiteResourceID {
+-			// Machine client: it can't list site resources, so the server
+-			// sent the exit node's sites along with the settings.
+-			if len(machineExitNodeSiteIDs) > 0 {
+-				opts.GatewaySiteResourceID, opts.GatewaySiteIDs = resourceID, machineExitNodeSiteIDs
+-			} else {
+-				logger.Warning("The exit node set by your organization is disabled or has no sites; not using it")
+-			}
+-		} else {
+-			opts.GatewaySiteResourceID, opts.GatewaySiteIDs = utils.ResolveSavedExitNode(savedResourceID, orgID, list)
+-		}
+-	} else if len(opts.GatewaySiteIDs) > 0 && opts.GatewaySiteResourceID <= 0 {
+-		err := fmt.Errorf("--exit-node-site-ids requires --exit-node-resource-id")
+-		logger.Error("%v", err)
+-		return err
+-	}
+-
++ if config.EffectiveExitNode(serverSettings,0,orgConfig) != 0 { return errors.New("exit-node settings require deferred stage B") }
++ }
+ 	// Handle log file setup - if detached mode, always use log file
+ 	var logFile string
+-	if !opts.Attached {
++	if !opts.Attached || opts.RuntimeSnapshot {
+ 		logFile = cfg.LogFile
+ 	}
+ 
+@@ -671,11 +648,6 @@
+ 	// We use an environment variable to detect this, rather than checking if running as root,
+ 	// because the user might run "sudo pangolin up" directly and still expect the TUI
+ 	if !opts.Attached && !isSubprocess {
+-		executable, err := os.Executable()
+-		if err != nil {
+-			logger.Error("Error: failed to get executable path: %v", err)
+-			return err
+-		}
+ 
+ 		// Settings resolved above (flags, env, config file, org config,
+ 		// server) are forwarded as flags: the process that runs the tunnel
+@@ -693,58 +665,9 @@
+ 			return nil
+ 		}
+ 
+-		// OLM credentials are always included (from flags, config, or newly created)
+-		cmdArgs := append([]string{"up", "client", "--id", olmID, "--secret", olmSecret}, forwardArgs...)
+-
+-		// Create command - subprocess should run with elevated permissions
+-		var procCmd *exec.Cmd
+-		if runtime.GOOS != "windows" {
+-			// Build shell command with proper quoting using printf %q
+-			var shellArgs []string
+-			shellArgs = append(shellArgs, executable)
+-			shellArgs = append(shellArgs, cmdArgs...)
+-			// Export environment variables:
+-			// - PANGOLIN_SUBPROCESS=1 to indicate this is a spawned subprocess (not direct user invocation)
+-			// - PANGOLIN_CREDENTIALS_FROM_KEYRING=1 to indicate credentials came from config
+-			shellCmd := "export PANGOLIN_SUBPROCESS=1 && "
+-			if credentialsFromKeyring {
+-				shellCmd += "export PANGOLIN_CREDENTIALS_FROM_KEYRING=1 && "
+-			}
+-			// Build command: nohup executable args >/dev/null 2>&1 &
+-			shellCmd += "nohup"
+-			for _, arg := range shellArgs {
+-				shellCmd += " " + fmt.Sprintf("%q", arg)
+-			}
+-			shellCmd += " >/dev/null 2>&1 &"
+-
+-			// If already running as root, skip sudo wrapper to avoid potential issues
+-			// with sudo behaving differently when invoked by root
+-			if os.Geteuid() == 0 {
+-				procCmd = exec.Command("sh", "-c", shellCmd)
+-			} else {
+-				// Use sudo with a shell wrapper to background the subprocess
+-				// This allows sudo to exit immediately after starting the subprocess
+-				// The subprocess needs root access for network interface creation
+-				procCmd = exec.Command("sudo", "sh", "-c", shellCmd)
+-				// Connect stdin/stderr so sudo can prompt for password interactively
+-				procCmd.Stdin = os.Stdin
+-				procCmd.Stderr = os.Stderr
+-			}
+-			procCmd.Stdout = nil
+-		}
+-
+-		// Start the process
+-		if err := procCmd.Start(); err != nil {
+-			logger.Error("Error: failed to start detached process: %v", err)
+-			return err
+-		}
+-
+-		// Wait for sudo to complete (password prompt + subprocess start)
+-		// The shell wrapper backgrounds the subprocess, so sudo exits immediately
+-		if err := procCmd.Wait(); err != nil {
+-			logger.Error("Error: failed to start subprocess: %v", err)
+-			return err
+-		}
++  opts.ID,opts.Secret,opts.Endpoint,opts.OrgID = olmID,olmSecret,endpoint,orgID
++  if credentialsFromKeyring { account, err := accountStore.ActiveAccount(); if err != nil { return err }; opts.UserToken=account.SessionToken }
++  if err := launchRuntime(cmd.Context(),opts,cfg); err != nil { return err }
+ 
+ 		// In silent mode, skip TUI and just exit after starting the process
+ 		if opts.Silent {
+@@ -839,7 +762,8 @@
+ 		upstreamDNS = append(upstreamDNS, server)
+ 	}
+ 
+-	// Setup log file if specified
++	redact.InitEngine()
++ // Setup log file if specified
+ 	if logFile != "" {
+ 		if err := setupLogFile(cfg.LogFile); err != nil {
+ 			logger.Error("Error: failed to setup log file: %v", err)
+@@ -851,8 +775,8 @@
+ 	// Check environment variable to distinguish between:
+ 	// - Parent process passing id/secret from config (should fetch userToken)
+ 	// - User directly passing id/secret (should NOT fetch userToken)
+-	var userToken string
+-	credentialsFromKeyringEnv := os.Getenv("PANGOLIN_CREDENTIALS_FROM_KEYRING")
++	userToken := opts.UserToken
++	credentialsFromKeyringEnv := ""
+ 	credentialsFromKeyring = credentialsFromKeyringEnv == "1" || credentialsFromKeyring
+ 	if credentialsFromKeyring {
+ 		// Credentials came from config, fetch userToken from secrets
+@@ -884,7 +808,7 @@
+ 		// override is installed. The watchdog will reset DNS if this
+ 		// process dies before it can restore the original configuration.
+ 		WatchdogSubcommand: []string{"watchdog"},
+-		WatchdogLogFile:    cfg.LogFile,
++		WatchdogLogFile:    filepath.Join(filepath.Dir(socketPath),"watchdog.log"),
+ 		OnTerminated: func() {
+ 			logger.Info("Client process terminated")
+ 			stop()
+@@ -903,19 +827,12 @@
+ 
+ 	// Only collect fingerprint for user devices; machine clients (id/secret provided) skip it
+ 	var initialFingerprint, initialPostures map[string]interface{}
+-	if credentialsFromKeyring {
++	if userToken != "" {
+ 		initialFp := fingerprint.GatherFingerprintInfo()
+ 		initialFingerprint = initialFp.ToMap()
+ 		initialPostures = fingerprint.GatherPostureChecks().ToMap()
+ 
+-		// Write the fingerprint to disk immediately so it's available for other processes
+-		if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
+-			if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
+-				_ = os.MkdirAll(fingerprintDir, 0o755)
+-			}
+-			_ = os.WriteFile(fingerprintFilePath, []byte(initialFp.PlatformFingerprint), 0o644)
+-		}
+-	}
++ }
+ 
+ 	tunnelConfig := olmpkg.TunnelConfig{
+ 		Endpoint:                          endpoint,
+@@ -959,7 +876,8 @@
+ 		return err
+ 	}
+ 
+-	olm, err := olmpkg.Init(ctx, olmInitConfig)
++ lock, err := prepareClientRuntime(); if err != nil { return err }; defer lock.Close()
++ olm, err := olmpkg.Init(ctx, olmInitConfig)
+ 	if err != nil {
+ 		logger.Error("Error: failed to init olm: %v", err)
+ 		return err
+@@ -967,14 +886,18 @@
+ 	defer olm.Close()
+ 
+ 	// Only run ongoing fingerprint updates for user devices
+-	if credentialsFromKeyring {
++	if userToken != "" {
+ 		cancelFingerprinting := startFingerprinting(olm)
+ 		defer cancelFingerprinting()
+ 	}
+ 
+-	if enableAPI {
+-		_ = olm.StartApi()
+-	}
++ if enableAPI {
++  if err := olm.StartApi(); err != nil { return errors.New("could not start protected client control socket") }
++ }
++ if err := os.Chown(socketPath, controlUID(), -1); err != nil { return err }
++ if err := os.Chmod(socketPath,0600); err != nil { return err }
++ if err := os.Chmod(filepath.Dir(socketPath),0711); err != nil { return err }
++ if opts.RuntimeSnapshot { signalReady() }
+ 
+ 	// Run StartTunnel in a goroutine so org switching can restart it
+ 	// without causing the CLI process to exit
+@@ -991,7 +914,8 @@
+ func setupLogFile(logPath string) error {
+ 	logDir := filepath.Dir(logPath)
+ 
+-	// Rotate log file if needed
++	if file, err := securefile.AppendForUser(logPath, controlUID()); err != nil { return err } else { _ = file.Close() }
++ // Rotate log file if needed
+ 	err := rotateLogFile(logDir, logPath)
+ 	if err != nil {
+ 		// Log warning but continue
+@@ -999,13 +923,13 @@
+ 	}
+ 
+ 	// Open log file for appending
+-	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
++	file, err := securefile.AppendForUser(logPath, controlUID())
+ 	if err != nil {
+ 		return fmt.Errorf("failed to open log file: %v", err)
+ 	}
+ 
+ 	// Set the logger output
+-	newtLogger.GetLogger().SetOutput(file)
++	redact.EngineOutput(file)
+ 
+ 	// log.Printf("Logging to file: %s", logPath)
+ 	return nil
+@@ -1075,14 +999,6 @@
+ 		ticker := time.NewTicker(30 * time.Second)
+ 		defer ticker.Stop()
+ 
+-		fingerprintFilePath, _ := config.GetFingerprintFilePath()
+-		fingerprintDir, _ := config.GetFingerprintDir()
+-
+-		// Ensure the fingerprint directory exists
+-		if fingerprintDir != "" {
+-			_ = os.MkdirAll(fingerprintDir, 0o755)
+-		}
+-
+ 		for {
+ 			select {
+ 			case <-ctx.Done():
+@@ -1091,10 +1007,6 @@
+ 				fp := fingerprint.GatherFingerprintInfo()
+ 				postures := fingerprint.GatherPostureChecks()
+ 
+-				if fingerprintFilePath != "" {
+-					_ = os.WriteFile(fingerprintFilePath, []byte(fp.PlatformFingerprint), 0o644)
+-				}
+-
+ 				o.SetFingerprint(fp.ToMap())
+ 				o.SetPostures(postures.ToMap())
+ 			}
+--- a/cmd/up/site/site.go
++++ b/cmd/up/site/site.go
+@@ -6,26 +6,20 @@
+ package site
+ 
+ import (
++ "github.com/fosrl/cli/internal/redact"
+ 	"context"
+-	"crypto/tls"
+-	"errors"
+ 	"fmt"
+ 	"os"
+ 	"os/signal"
+-	"path/filepath"
+ 	"runtime"
+ 	"syscall"
+-	"time"
+ 
+-	"github.com/fosrl/cli/internal/config"
+ 	versionpkg "github.com/fosrl/cli/internal/version"
+ 	"github.com/fosrl/newt/clients/permissions"
+-	newtLogger "github.com/fosrl/newt/logger"
+ 	newtpkg "github.com/fosrl/newt/newt"
+ 	"github.com/fosrl/newt/newtconfig"
+-	"github.com/fosrl/newt/updates"
+-	"github.com/fosrl/newt/websocket"
+ 	"github.com/spf13/cobra"
++ "github.com/fosrl/cli/internal/policy"
+ )
+ 
+ // SiteUpCmd returns the `up site` command. Flag parsing is delegated
+@@ -51,7 +45,9 @@
+ }
+ 
+ func run(ctx context.Context, args []string) error {
+-	newtLogger.Init(nil)
++ if err := policy.SiteInput(args); err != nil { return err }
++ lock,err:=policy.SiteRuntimeLock(); if err!=nil{return err};if lock!=nil{defer lock.Close()}
++ redact.InitEngine()
+ 
+ 	defaultConfigFile, err := defaultSiteConfigFile()
+ 	if err != nil {
+@@ -70,7 +66,9 @@
+ 		return fmt.Errorf("configuration error: %w", err)
+ 	}
+ 
+-	if cfg.UseNativeMainInterface {
++	if cfg.BlueprintFile != "" || cfg.ProvisioningBlueprintFile != "" || cfg.ProvisioningKey != "" { return fmt.Errorf("blueprint/provisioning inputs are deferred") }
++ redact.Register(cfg.Secret)
++ if cfg.UseNativeMainInterface {
+ 		if err := permissions.CheckNativeInterfacePermissions(); err != nil {
+ 			return fmt.Errorf("insufficient permissions for native main tunnel interface: %w", err)
+ 		}
+@@ -89,7 +87,7 @@
+ 		return fmt.Errorf("failed to initialize newt: %w", err)
+ 	}
+ 
+-	resolvedCfg := n.GetConfig()
++
+ 
+ 	// Prometheus/OTLP exporters and the admin server (/metrics, /healthz,
+ 	// pprof) - honors --metrics, --metrics-admin-addr, --otlp, --pprof,
+@@ -97,7 +95,7 @@
+ 	stopTelemetry := n.StartTelemetry(sigCtx)
+ 	defer stopTelemetry()
+ 
+-	startSelfUpdateChecks(sigCtx, resolvedCfg)
++
+ 
+ 	n.Start(sigCtx)
+ 
+@@ -112,65 +110,6 @@
+ // using its own default (~/.config/newt-client/config.json) since it never
+ // sets newtconfig.Options.DefaultConfigFile.
+ func defaultSiteConfigFile() (string, error) {
+-	dir, err := config.GetPangolinConfigDir()
+-	if err != nil {
+-		return "", err
+-	}
+-	return filepath.Join(dir, "site.json"), nil
++ return "/etc/ztarc/site.json", nil
+ }
+ 
+-// startSelfUpdateChecks periodically checks the Pangolin server for a newer
+-// CLI release and, if one is available, downloads it, replaces the running
+-// `pangolin` binary on disk, and re-execs in place - mirroring the
+-// self-update loop the standalone newt binary runs for itself, but with
+-// Agent: "cli" so the server hands back a pangolin-cli release instead of a
+-// newt one.
+-func startSelfUpdateChecks(ctx context.Context, resolvedCfg newtpkg.Config) {
+-	// Reuse the same TLS parameters as the websocket client for the
+-	// self-update HTTP requests.
+-	var selfUpdateTLS *tls.Config
+-	if resolvedCfg.TLSClientCert != "" || resolvedCfg.TLSPrivateKey != "" {
+-		selfUpdateTLS, _ = websocket.BuildTLSConfig(
+-			resolvedCfg.TLSClientCert,
+-			resolvedCfg.TLSClientKey,
+-			resolvedCfg.TLSClientCAs,
+-			resolvedCfg.TLSPrivateKey,
+-		)
+-	}
+-
+-	doUpdate := func() {
+-		newtLogger.Debug("checkAndSelfUpdate: running periodic update check")
+-		// The server compares the CLI against CLI releases, so report the
+-		// CLI's own version (not the embedded newt version) as current.
+-		if err := updates.CheckAndSelfUpdate(updates.SelfUpdateConfig{
+-			Endpoint:       resolvedCfg.Endpoint,
+-			NewtID:         resolvedCfg.ID,
+-			Secret:         resolvedCfg.Secret,
+-			CurrentVersion: versionpkg.Version,
+-			TLSConfig:      selfUpdateTLS,
+-			Agent:          "cli",
+-			Restart:        updateRestart(),
+-		}); err != nil {
+-			if errors.Is(err, updates.ErrAutoUpdateUnsupportedInOfficialContainer) {
+-				newtLogger.Debug("checkAndSelfUpdate: auto-update skipped: %v", err)
+-				return
+-			}
+-			newtLogger.Error("Auto-update check failed: %v", err)
+-		}
+-	}
+-
+-	go func() {
+-		time.Sleep(2 * time.Minute)
+-		doUpdate()
+-		ticker := time.NewTicker(6 * time.Hour)
+-		defer ticker.Stop()
+-		for {
+-			select {
+-			case <-ticker.C:
+-				doUpdate()
+-			case <-ctx.Done():
+-				return
+-			}
+-		}
+-	}()
+-}
+--- a/internal/api/client.go
++++ b/internal/api/client.go
+@@ -1,10 +1,10 @@
+ package api
+ 
+ import (
++ "github.com/fosrl/cli/internal/redact"
+ 	"bytes"
+ 	"encoding/base64"
+ 	"encoding/json"
+-	"errors"
+ 	"fmt"
+ 	"io"
+ 	"net/http"
+@@ -30,7 +30,8 @@
+ 
+ // NewClient creates a new API client with the provided configuration
+ func NewClient(config ClientConfig) (*Client, error) {
+-	baseURL := config.BaseURL
++	redact.Register(config.Token, config.APIKey)
++ baseURL := config.BaseURL
+ 	if baseURL == "" {
+ 		baseURL = "https://app.pangolin.net"
+ 	} else if !strings.HasPrefix(baseURL, "http") {
+@@ -138,16 +139,24 @@
+ 		return fmt.Errorf("request failed: %w", err)
+ 	}
+ 	defer resp.Body.Close()
+-
+-	// Read response body
++ for _, cookie := range resp.Cookies() {
++  if cookie.Name == c.Session.SessionCookieName && cookie.Value != "" && cookie.Value != c.Session.SessionToken {
++   oldToken := c.Session.SessionToken
++   c.Session.SessionToken = cookie.Value
++   if c.OnSessionToken != nil { if err := c.OnSessionToken(oldToken,cookie.Value); err != nil { return err } }
++  }
++ }
++
++	if resp.StatusCode < 200 || resp.StatusCode >= 300 { return &ErrorResponse{Status:resp.StatusCode,Message:fmt.Sprintf("native API request failed (HTTP %d)",resp.StatusCode)} }
++ // Read response body
+ 	bodyBytes, err := io.ReadAll(resp.Body)
+ 	if err != nil {
+ 		return fmt.Errorf("failed to read response: %w", err)
+ 	}
+ 
+ 	if len(bodyBytes) == 0 {
+-		return nil
+-	}
++  if result != nil { return fmt.Errorf("empty native API response") };return nil
++ }
+ 
+ 	// Parse the API response structure
+ 	var apiResp APIResponse
+@@ -562,10 +571,6 @@
+ 	path := fmt.Sprintf("/org/%s/my-client-settings", url.PathEscape(orgID))
+ 	var response MyClientSettingsResponse
+ 	if err := c.Get(path, &response); err != nil {
+-		var errResp *ErrorResponse
+-		if errors.As(err, &errResp) && errResp.Status == http.StatusNotFound {
+-			return nil, nil
+-		}
+ 		return nil, err
+ 	}
+ 	return response.Settings, nil
+@@ -583,10 +588,6 @@
+ 	}
+ 	var response OlmClientSettingsResponse
+ 	if err := c.Post("/auth/olm/client-settings", body, &response); err != nil {
+-		var errResp *ErrorResponse
+-		if errors.As(err, &errResp) && errResp.Status == http.StatusNotFound {
+-			return &OlmClientSettingsResponse{}, nil
+-		}
+ 		return nil, err
+ 	}
+ 	return &response, nil
+--- a/internal/api/global.go
++++ b/internal/api/global.go
+@@ -11,7 +11,8 @@
+ // when non-empty (see Config.SessionCookieName).
+ func InitClient(hostname string, token string, sessionCookieName string) (*Client, error) {
+ 	// Build base URL (hostname should already include protocol from login)
+-	baseURL := hostname
++	if hostname == "" { hostname = "https://console.ztarc.io" }
++ baseURL := hostname
+ 	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+ 		// If no protocol, default to https
+ 		baseURL = "https://" + baseURL
+--- a/internal/api/types.go
++++ b/internal/api/types.go
+@@ -10,6 +10,7 @@
+ 
+ // Client represents the API client configuration
+ type Client struct {
++ OnSessionToken func(string,string) error
+ 	BaseURL    string
+ 	AgentName  string
+ 	Session    ClientSession
+--- a/internal/companion/provider_linux.go
++++ b/internal/companion/provider_linux.go
+@@ -36,15 +36,7 @@
+ // desktops), and turning companion mode on there would lock them out of
+ // their own CLI logins.
+ func platformProvider() Provider {
+-	if !desktopAppInstalled() {
+-		return nil
+-	}
+-	return desktopProvider{
+-		defaultDataDir: defaultDesktopDataDir(),
+-		secrets: func(string) SecretsClient {
+-			return newSocketSecretsClient()
+-		},
+-	}
++ return nil
+ }
+ 
+ func desktopAppInstalled() bool {
+--- a/internal/config/accounts.go
++++ b/internal/config/accounts.go
+@@ -1,11 +1,15 @@
+ package config
+ 
+ import (
++ "github.com/fosrl/cli/internal/redact"
+ 	"errors"
+ 	"os"
+ 	"path/filepath"
+ 
+ 	"github.com/spf13/viper"
++ "github.com/fosrl/cli/internal/securefile"
++ "bytes"
++ "encoding/json"
+ )
+ 
+ type AccountStore struct {
+@@ -234,7 +238,12 @@
+ 		Accounts:     map[string]Account{},
+ 	}
+ 
+-	if err := v.ReadInConfig(); err != nil {
++	dir, err := GetPangolinConfigDir()
++ if err != nil { return nil, err }
++ data, readErr := securefile.Read(filepath.Join(dir,"accounts.json"),false)
++ if errors.Is(readErr,os.ErrNotExist) { return &store,nil }
++ if readErr != nil { return nil,readErr }
++ if err := v.ReadConfig(bytes.NewReader(data)); err != nil {
+ 		if errors.Is(err, os.ErrNotExist) {
+ 			return &store, nil
+ 		}
+@@ -245,7 +254,8 @@
+ 		return nil, err
+ 	}
+ 
+-	return &store, nil
++	for _, account := range store.Accounts { redact.Register(account.SessionToken); if account.OlmCredentials != nil { redact.Register(account.OlmCredentials.Secret) } }
++ return &store, nil
+ }
+ 
+ // NewReadOnlyAccountStore builds an in-memory account store from desktop app session data.
+@@ -338,7 +348,8 @@
+ 		return errors.New("account user ID does not match active user ID")
+ 	}
+ 
+-	s.Accounts[s.ActiveUserID] = *account
++	account.SessionToken = s.Accounts[s.ActiveUserID].SessionToken
++ s.Accounts[s.ActiveUserID] = *account
+ 	return nil
+ }
+ 
+@@ -356,7 +367,11 @@
+ 	s.v.Set("activeUserId", s.ActiveUserID)
+ 	s.v.Set("accounts", s.Accounts)
+ 
+-	return s.v.WriteConfig()
++	data, err := json.MarshalIndent(s, "", "  ")
++ if err != nil { return err }
++ dir, err := GetPangolinConfigDir()
++ if err != nil { return err }
++ return securefile.Write(filepath.Join(dir,"accounts.json"),data)
+ }
+ 
+ // UpdateAccountUserInfo updates the username and name for a specific account
+--- a/internal/config/config.go
++++ b/internal/config/config.go
+@@ -13,6 +13,9 @@
+ 
+ 	"github.com/fosrl/cli/internal/logger"
+ 	"github.com/spf13/viper"
++ "github.com/fosrl/cli/internal/securefile"
++ "bytes"
++ "encoding/json"
+ )
+ 
+ type Config struct {
+@@ -179,8 +182,8 @@
+ 	// Defaults
+ 	v.SetDefault("log_level", "info")
+ 	v.SetDefault("log_file", defaultLogPath)
+-	v.SetDefault("disable_update_check", IsExternallyManaged())
+-	v.SetDefault("disable_companion_mode", false)
++	v.SetDefault("disable_update_check", true)
++	v.SetDefault("disable_companion_mode", true)
+ 	v.SetDefault("companion_app_data_dirs", map[string]string{})
+ 	v.SetDefault("up.match_domains_dns", []string{})
+ 
+@@ -195,7 +198,11 @@
+ 
+ 	cfg := Config{v: v}
+ 
+-	if err := v.ReadInConfig(); err != nil {
++	data, readErr := securefile.Read(v.ConfigFileUsed(), false)
++ if v.ConfigFileUsed() == "" { path, _ := ConfigFilePath(); data, readErr = securefile.Read(path, false) }
++ if readErr != nil && !errors.Is(readErr, os.ErrNotExist) { return nil, readErr }
++ if errors.Is(readErr, os.ErrNotExist) { readErr = nil } else { readErr = v.ReadConfig(bytes.NewReader(data)) }
++ if err := readErr; err != nil {
+ 		if errors.Is(err, os.ErrNotExist) {
+ 			if err := v.Unmarshal(&cfg); err != nil {
+ 				return nil, err
+@@ -225,7 +232,7 @@
+ 
+ // CompanionModeEnabled reports whether companion mode is enabled in config.
+ func (c *Config) CompanionModeEnabled() bool {
+-	return !c.DisableCompanionMode
++ return false
+ }
+ 
+ // SetCompanionModeEnabled updates the companion mode config flag.
+@@ -570,26 +577,12 @@
+ 		c.v.Set("orgs", c.Orgs)
+ 	}
+ 
+-	dir, err := GetPangolinConfigDir()
+-	if err != nil {
+-		return err
+-	}
+-	if err := os.MkdirAll(dir, 0o755); err != nil {
+-		return fmt.Errorf("failed to create config directory: %w", err)
+-	}
+-
+-	configFile := c.v.ConfigFileUsed()
+-	if configFile == "" {
+-		configFile, err = ConfigFilePath()
+-		if err != nil {
+-			return err
+-		}
+-	}
+-	if _, err := os.Stat(configFile); errors.Is(err, os.ErrNotExist) {
+-		return c.v.WriteConfigAs(configFile)
+-	}
+-
+-	return c.v.WriteConfig()
++ path, err := ConfigFilePath()
++ if err != nil { return err }
++ data, err := json.MarshalIndent(c.v.AllSettings(), "", "  ")
++ if err != nil { return err }
++ return securefile.Write(path, data)
++
+ }
+ 
+ // GetPangolinConfigDir returns the path to the .pangolin directory and ensures it exists
+@@ -658,13 +651,7 @@
+ // and needs to be written by a privileged process but readable by all users.
+ // On other platforms, it falls back to the user config directory.
+ func GetFingerprintDir() (string, error) {
+-	// On Linux, prefer /etc/pangolin for system-wide fingerprint storage
+-	if runtime.GOOS == "linux" {
+-		return "/etc/pangolin", nil
+-	}
+-
+-	// On other platforms, use the user config directory
+-	return GetPangolinConfigDir()
++dir,err:=GetPangolinConfigDir(); if err!=nil { return "",err }; return filepath.Join(dir,"fingerprint"),nil
+ }
+ 
+ // GetFingerprintFilePath returns the full path to the platform fingerprint file.
+--- a/internal/logger/logger.go
++++ b/internal/logger/logger.go
+@@ -1,6 +1,7 @@
+ package logger
+ 
+ import (
++ "github.com/fosrl/cli/internal/redact"
+ 	"fmt"
+ 	"os"
+ 	"strings"
+@@ -77,7 +78,7 @@
+ 
+ // Info logs an info message
+ func (l *Logger) Info(format string, args ...any) {
+-	message := fmt.Sprintf(format, args...)
++	message := redact.String(fmt.Sprintf(format, args...))
+ 	fmt.Printf("%s", message)
+ 	if !strings.HasSuffix(message, "\n") {
+ 		fmt.Println()
+@@ -89,7 +90,7 @@
+ 	if l.level != LogLevelDebug {
+ 		return
+ 	}
+-	message := fmt.Sprintf(format, args...)
++	message := redact.String(fmt.Sprintf(format, args...))
+ 	icon := colorDebugStyle.Render(iconDebug)
+ 	fmt.Printf("%s %s", icon, message)
+ 	if !strings.HasSuffix(message, "\n") {
+@@ -99,7 +100,7 @@
+ 
+ // Success logs a success message
+ func (l *Logger) Success(format string, args ...any) {
+-	message := fmt.Sprintf(format, args...)
++	message := redact.String(fmt.Sprintf(format, args...))
+ 	// icon := colorSuccessStyle.Render(iconSuccess)
+ 	fmt.Printf("%s", message)
+ 	if !strings.HasSuffix(message, "\n") {
+@@ -109,7 +110,7 @@
+ 
+ // Error logs an error message
+ func (l *Logger) Error(format string, args ...any) {
+-	message := fmt.Sprintf(format, args...)
++	message := redact.String(fmt.Sprintf(format, args...))
+ 	// icon := colorErrorStyle.Render(iconError)
+ 	fmt.Fprintf(os.Stderr, "%s", message)
+ 	if !strings.HasSuffix(message, "\n") {
+@@ -119,7 +120,7 @@
+ 
+ // Warning logs a warning message
+ func (l *Logger) Warning(format string, args ...any) {
+-	message := fmt.Sprintf(format, args...)
++	message := redact.String(fmt.Sprintf(format, args...))
+ 	// icon := colorWarningStyle.Render(iconWarning)
+ 	fmt.Printf("%s", message)
+ 	if !strings.HasSuffix(message, "\n") {
+--- a/internal/utils/auth.go
++++ b/internal/utils/auth.go
+@@ -3,8 +3,7 @@
+ import (
+ 	"errors"
+ 	"fmt"
+-	"os"
+-	"runtime"
++ "github.com/fosrl/cli/internal/securefile"
+ 
+ 	"github.com/fosrl/cli/internal/api"
+ 	"github.com/fosrl/cli/internal/config"
+@@ -47,17 +46,8 @@
+ 	// attributes like DMI information.
+ 	cachedPlatfromFingerprintFilename, _ := config.GetFingerprintFilePath()
+ 
+-	// Check if fingerprint file exists
+-	_, statErr := os.Stat(cachedPlatfromFingerprintFilename)
+-	fingerprintFileExists := statErr == nil
+-
+-	// If the fingerprint file doesn't exist and we're not running as root on Linux,
+-	// we need to prompt the user to run as sudo for the first-time setup
+-	if !fingerprintFileExists && runtime.GOOS == "linux" && os.Geteuid() != 0 {
+-		return false, ErrSudoRequired
+-	}
+-
+-	if cachedFingerprint, err := os.ReadFile(cachedPlatfromFingerprintFilename); err == nil {
++
++	if cachedFingerprint, err := securefile.Read(cachedPlatfromFingerprintFilename,false); err == nil {
+ 		recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, string(cachedFingerprint))
+ 		switch {
+ 		case err == nil:
+@@ -76,9 +66,9 @@
+ 	// Write the fingerprint to disk so it's available for future processes
+ 	if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
+ 		if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
+-			_ = os.MkdirAll(fingerprintDir, 0o755)
+-		}
+-		_ = os.WriteFile(fingerprintFilePath, []byte(fp.PlatformFingerprint), 0o644)
++			_ = securefile.EnsureDir(fingerprintDir)
++		}
++		_ = securefile.Write(fingerprintFilePath, []byte(fp.PlatformFingerprint))
+ 	}
+ 
+ 	recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, fp.PlatformFingerprint)
+--- a/internal/utils/config.go
++++ b/internal/utils/config.go
+@@ -4,7 +4,7 @@
+ 	"strings"
+ )
+ 
+-const defaultHostname = "app.pangolin.net"
++const defaultHostname = "console.ztarc.io"
+ 
+ // FormatHostnameBaseURL returns the hostname formatted as a base URL (with protocol, without /api/v1).
+ // This is useful for constructing URLs to the web interface.
+--- a/internal/version/check.go
++++ b/internal/version/check.go
+@@ -1,95 +1,8 @@
+ package version
+-
+-import (
+-	"encoding/json"
+-	"fmt"
+-	"io"
+-	"net/http"
+-	"strings"
+-	"time"
+-
+-	"github.com/Masterminds/semver/v3"
+-	"github.com/fosrl/cli/internal/logger"
+-)
+-
+-const (
+-	// VersionsAPIURL is the Fossorial versions endpoint.
+-	VersionsAPIURL = "https://api.fossorial.io/api/v1/versions"
+-)
+-
+-// GitHubRelease represents a GitHub release
+-type GitHubRelease struct {
+-	TagName string `json:"tag_name"`
+-	Name    string `json:"name"`
+-	URL     string `json:"html_url"`
+-}
+-
+-type versionsAPIResponse struct {
+-	Data struct {
+-		CLI struct {
+-			LatestVersion string `json:"latestVersion"`
+-			ReleaseNotes  string `json:"releaseNotes"`
+-		} `json:"cli"`
+-	} `json:"data"`
+-	Success bool `json:"success"`
+-}
+-
+-// GetLatestRelease fetches the latest CLI release from the Fossorial versions API.
+-func GetLatestRelease() (*GitHubRelease, error) {
+-	logger.Debug("Checking latest CLI version from %s", VersionsAPIURL)
+-
+-	client := &http.Client{
+-		Timeout: 10 * time.Second,
+-	}
+-
+-	req, err := http.NewRequest("GET", VersionsAPIURL, nil)
+-	if err != nil {
+-		return nil, fmt.Errorf("failed to create request: %w", err)
+-	}
+-
+-	req.Header.Set("Accept", "application/json")
+-	req.Header.Set("User-Agent", "pangolin-cli")
+-
+-	resp, err := client.Do(req)
+-	if err != nil {
+-		return nil, fmt.Errorf("failed to fetch release: %w", err)
+-	}
+-	defer resp.Body.Close()
+-
+-	if resp.StatusCode != http.StatusOK {
+-		body, _ := io.ReadAll(resp.Body)
+-		return nil, fmt.Errorf("failed to fetch release: status %d, body: %s", resp.StatusCode, string(body))
+-	}
+-
+-	body, err := io.ReadAll(resp.Body)
+-	if err != nil {
+-		return nil, fmt.Errorf("failed to read response: %w", err)
+-	}
+-
+-	var apiResp versionsAPIResponse
+-	if err := json.Unmarshal(body, &apiResp); err != nil {
+-		return nil, fmt.Errorf("failed to parse response: %w", err)
+-	}
+-
+-	if !apiResp.Success {
+-		return nil, fmt.Errorf("versions API returned unsuccessful response")
+-	}
+-
+-	if apiResp.Data.CLI.LatestVersion == "" {
+-		return nil, fmt.Errorf("versions API response missing cli.latestVersion")
+-	}
+-
+-	release := GitHubRelease{
+-		TagName: apiResp.Data.CLI.LatestVersion,
+-		Name:    apiResp.Data.CLI.LatestVersion,
+-		URL:     apiResp.Data.CLI.ReleaseNotes,
+-	}
+-
+-	logger.Debug("Versions API latest cli version: %s", release.TagName)
+-
+-	return &release, nil
+-}
+-
++import ("github.com/Masterminds/semver/v3"; "fmt"; "strings")
++type GitHubRelease struct { TagName string; Name string; URL string }
++const VersionsAPIURL = "disabled"
++func GetLatestRelease() (*GitHubRelease,error) { return nil,nil }
+ // normalizeVersion removes 'v' prefix from version string if present
+ func normalizeVersion(v string) string {
+ 	return strings.TrimPrefix(v, "v")
+@@ -118,74 +31,5 @@
+ 	return currentVer.Compare(latestVer), nil
+ }
+ 
+-// CheckForUpdate checks if there's an update available
+-// Returns the latest release if an update is available, nil otherwise
+-func CheckForUpdate() (*GitHubRelease, error) {
+-	latest, err := GetLatestRelease()
+-	if err != nil {
+-		logger.Debug("Update check failed while fetching latest version: %v", err)
+-		return nil, err
+-	}
+-
+-	comparison, err := CompareVersions(Version, latest.TagName)
+-	if err != nil {
+-		logger.Debug("Update check failed during version comparison current=%s latest=%s err=%v", Version, latest.TagName, err)
+-		return nil, err
+-	}
+-
+-	logger.Debug("Version comparison current=%s latest=%s result=%d", Version, latest.TagName, comparison)
+-
+-	// If current version is less than latest, update is available
+-	if comparison < 0 {
+-		return latest, nil
+-	}
+-
+-	return nil, nil
+-}
+-
+-// CheckForUpdateAsync checks for updates asynchronously and displays a message if available.
+-// It waits a short time for the check to complete so the message is shown even for fast commands.
+-// It respects the cache interval and only checks once per day.
+-func CheckForUpdateAsync(showMessage func(*GitHubRelease)) {
+-	// First, check if we have cached info that shows an update
+-	if cachedRelease, ok := getCachedUpdateInfo(); ok {
+-		showMessage(cachedRelease)
+-		return
+-	}
+-
+-	// If we shouldn't check yet (based on cache interval), skip
+-	if !shouldCheckForUpdate() {
+-		return
+-	}
+-
+-	// Channel to signal when the check is complete
+-	done := make(chan *GitHubRelease, 1)
+-
+-	// Check for updates in the background
+-	go func() {
+-		latest, err := CheckForUpdate()
+-		if err != nil {
+-			// Silently fail - don't show errors for update checks
+-			logger.Debug("Background update check failed: %v", err)
+-			done <- nil
+-			return
+-		}
+-
+-		// Cache the result (even if no update, to avoid checking too frequently)
+-		cacheUpdateInfo(latest)
+-		done <- latest
+-	}()
+-
+-	// Wait a short time for the check to complete (200ms should be enough for most cases)
+-	select {
+-	case release := <-done:
+-		// Check completed, show message if update is available
+-		if release != nil {
+-			showMessage(release)
+-		}
+-	case <-time.After(1000 * time.Millisecond):
+-		// Timeout - continue without showing message (check continues in background)
+-		// This ensures fast commands don't get blocked
+-		logger.Debug("Update check timed out after 1000ms; continuing without blocking")
+-	}
+-}
++func CheckForUpdate() (*GitHubRelease,error) { return nil,nil }
++func CheckForUpdateAsync(func(*GitHubRelease)) {}

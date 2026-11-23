@@ -1,0 +1,9 @@
+Pangolin CLI and its embedded Newt and Olm engines retain their upstream
+copyrights and license terms. See upstream/LICENSE, upstream/go.mod and
+upstream/go.sum for the pinned dependency graph.
+Newt: github.com/fosrl/newt v1.20.1
+Olm: github.com/fosrl/olm v1.10.2
+Release source bundles include the complete upstream CLI source, ZTARC patches,
+build scripts and the module metadata. Package generation also includes a
+third-party module/license inventory. Dependencies are obtained with Go module
+checksum verification; retain each dependency's notices when redistributing it.

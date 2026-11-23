@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "baseImage": "public.ecr.aws/docker/library/alpine@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2",
+  "sourceTag": "3.23",
+  "status": "not_tested"
+}

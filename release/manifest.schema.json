@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dl.ztarc.io/cli/schemas/manifest-v1.json",
+  "title": "ZTARC CLI immutable release manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "version",
+    "upstream",
+    "engines",
+    "binaries",
+    "installer",
+    "image",
+    "platforms",
+    "compatibility",
+    "provenance",
+    "capabilities",
+    "licenses"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "upstream": {
+      "type": "object",
+      "required": [
+        "commit",
+        "version",
+        "repository"
+      ],
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "version": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        }
+      }
+    },
+    "engines": {
+      "type": "object",
+      "required": [
+        "newt",
+        "olm"
+      ],
+      "properties": {
+        "newt": {
+          "type": "string"
+        },
+        "olm": {
+          "type": "string"
+        }
+      }
+    },
+    "binaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amd64",
+        "arm64"
+      ],
+      "properties": {
+        "amd64": {
+          "$ref": "#/$defs/binary"
+        },
+        "arm64": {
+          "$ref": "#/$defs/binary"
+        }
+      }
+    },
+    "installer": {
+      "$ref": "#/$defs/artifact"
+    },
+    "provenance": {
+      "$ref": "#/$defs/artifact"
+    },
+    "image": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "repository",
+            "digest",
+            "archive",
+            "sha256",
+            "size",
+            "status",
+            "published",
+            "baseImage"
+          ],
+          "properties": {
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/hash"
+            },
+            "published": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "platforms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "os",
+          "arch",
+          "status",
+          "evidence"
+        ]
+      }
+    },
+    "compatibility": {
+      "type": "object"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "command",
+          "stage",
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "supported",
+              "not_tested",
+              "unsupported",
+              "deferred"
+            ]
+          }
+        }
+      }
+    },
+    "licenses": {
+      "$ref": "#/$defs/artifact"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "artifact": {
+      "type": "object",
+      "required": [
+        "file",
+        "sha256"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_.-]+$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "binary": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "type": "object",
+          "required": [
+            "size",
+            "url"
+          ],
+          "properties": {
+            "size": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "url": {
+              "type": "string",
+              "pattern": "^https://dl\\.ztarc\\.io/cli/"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

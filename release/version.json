@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "product": "ztarc-cli",
+  "version": "0.23.0-ztarc.1",
+  "upstream": {
+    "repository": "https://github.com/fosrl/cli",
+    "version": "0.23.0",
+    "commit": "bb03d2c45ce79213c4c9b206bbd87e9846be5a9a"
+  },
+  "engines": {
+    "newt": "1.20.1",
+    "olm": "1.10.2"
+  },
+  "toolchain": "go1.26.10",
+  "defaultEndpoint": "https://console.ztarc.io"
+}

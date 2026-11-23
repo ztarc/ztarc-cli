@@ -1,0 +1,380 @@
+{
+  "schemaVersion": 1,
+  "upstreamCommit": "bb03d2c45ce79213c4c9b206bbd87e9846be5a9a",
+  "entries": [
+    {
+      "upstreamFunction": "Logout",
+      "method": "POST",
+      "pathTemplate": "/auth/logout",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "GetUser",
+      "method": "GET",
+      "pathTemplate": "/user",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "GetServerInfo",
+      "method": "GET",
+      "pathTemplate": "/server-info",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "ListUserOrgs",
+      "method": "GET",
+      "pathTemplate": "/user/%s/orgs",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "CreateOlm",
+      "method": "PUT",
+      "pathTemplate": "/user/%s/olm",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": {
+        "name": "string"
+      },
+      "query": [],
+      "secretFields": [
+        "secret"
+      ]
+    },
+    {
+      "upstreamFunction": "GetUserOlm",
+      "method": "GET",
+      "pathTemplate": "/user/%s/olm/%s",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [
+        "orgId (optional)"
+      ],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "RecoverOlmFromFingerprint",
+      "method": "POST",
+      "pathTemplate": "/user/%s/olm/recover",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": {
+        "platformFingerprint": "string"
+      },
+      "query": [],
+      "secretFields": [
+        "secret"
+      ]
+    },
+    {
+      "upstreamFunction": "GetOrg",
+      "method": "GET",
+      "pathTemplate": "/org/%s",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "CheckOrgUserAccess",
+      "method": "GET",
+      "pathTemplate": "/org/%s/user/%s/check",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "ListUserResourceAliases",
+      "method": "GET",
+      "pathTemplate": "/org/%s/user-resource-aliases",
+      "stage": "B",
+      "status": "deferred",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": []
+    },
+    {
+      "upstreamFunction": "ListLauncherResources",
+      "method": "GET",
+      "pathTemplate": "/org/%s/launcher/resources",
+      "stage": "B",
+      "status": "deferred",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": []
+    },
+    {
+      "upstreamFunction": "ListGatewayResources",
+      "method": "GET",
+      "pathTemplate": "/org/%s/site-resources",
+      "stage": "B",
+      "status": "deferred",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": []
+    },
+    {
+      "upstreamFunction": "GetResourceByNiceID",
+      "method": "GET",
+      "pathTemplate": "/org/%s/resource/%s",
+      "stage": "C",
+      "status": "deferred",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": []
+    },
+    {
+      "upstreamFunction": "ListMyVirtualApiKeys",
+      "method": "GET",
+      "pathTemplate": "/org/%s/my-virtual-api-keys",
+      "stage": "C",
+      "status": "deferred",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": []
+    },
+    {
+      "upstreamFunction": "GetMyVirtualApiKey",
+      "method": "GET",
+      "pathTemplate": "/org/%s/my-virtual-api-keys/%s",
+      "stage": "C",
+      "status": "deferred",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": []
+    },
+    {
+      "upstreamFunction": "SignSSHKey",
+      "method": "POST",
+      "pathTemplate": "/org/%s/ssh/sign-key",
+      "stage": "B",
+      "status": "deferred",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": []
+    },
+    {
+      "upstreamFunction": "GetRoundTripMessage",
+      "method": "GET",
+      "pathTemplate": "/ws/round-trip-message/%d",
+      "stage": "B",
+      "status": "deferred",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": []
+    },
+    {
+      "upstreamFunction": "GetClient",
+      "method": "GET",
+      "pathTemplate": "/client/%d",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "GetMyDevice",
+      "method": "GET",
+      "pathTemplate": "/my-device?%s",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [
+        "olmId"
+      ],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "GetMyClientSettings",
+      "method": "GET",
+      "pathTemplate": "/org/%s/my-client-settings",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "GetOlmClientSettings",
+      "method": "POST",
+      "pathTemplate": "/auth/olm/client-settings",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "Olm ID/secret",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": {
+        "olmId": "string",
+        "secret": "string",
+        "orgId": "optional string"
+      },
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "TestConnection",
+      "method": "HEAD",
+      "pathTemplate": "/api/v1",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "Reachability only; no management authorization implied",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "CheckHealth",
+      "method": "GET",
+      "pathTemplate": "/api/v1",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "Reachability only; no management authorization implied",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "LoginWithCookie",
+      "method": "POST",
+      "pathTemplate": "/api/v1/auth/login",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": []
+    },
+    {
+      "upstreamFunction": "StartDeviceWebAuth",
+      "method": "POST",
+      "pathTemplate": "/auth/device-web-auth/start",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "device authorization code",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": {
+        "applicationName": "string",
+        "deviceName": "optional string"
+      },
+      "query": [],
+      "secretFields": [
+        "code"
+      ]
+    },
+    {
+      "upstreamFunction": "PollDeviceWebAuth",
+      "method": "GET",
+      "pathTemplate": "/auth/device-web-auth/poll/%s",
+      "stage": "A",
+      "status": "not_tested",
+      "identity": "device authorization code",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": [],
+      "requestBody": null,
+      "query": [],
+      "secretFields": [
+        "token"
+      ]
+    },
+    {
+      "upstreamFunction": "ApplyBlueprint",
+      "method": "PUT",
+      "pathTemplate": "/org/%s/blueprint",
+      "stage": "C",
+      "status": "deferred",
+      "identity": "native user session; requested user/org must be authorized",
+      "requestContract": "See pinned upstream/internal/api/client.go and types.go; integration table in docs/console-contract.md",
+      "secretResponse": "own-session/Olm credential only when required; never expose cross-user/tenant credentials",
+      "authorizationEvidence": []
+    }
+  ]
+}

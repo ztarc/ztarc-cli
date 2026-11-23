@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-23T02:30:07.390594+00:00",
+  "upstreamCommit": "bb03d2c45ce79213c4c9b206bbd87e9846be5a9a",
+  "ztarcCommit": null,
+  "sourceIdentity": "uncommitted: environment .git is read-only and not a valid repository",
+  "checks": {
+    "pipelineUnitTests": {
+      "status": "passed",
+      "cases": 12
+    },
+    "goUnitTests": "passed",
+    "stagingIdempotence": "passed",
+    "upstreamClean": "passed",
+    "linuxCrossBuild": [
+      "amd64",
+      "arm64"
+    ],
+    "offlineSmoke": "passed",
+    "ociAmd64Build": "passed",
+    "ociArm64Build": "not_tested: no local QEMU; CI setup configured",
+    "releaseSourceGate": "passed: correctly refuses invalid Git checkout",
+    "productionSignature": "not_tested: requires GitHub OIDC release workflow",
+    "standaloneSourceBundleBuild": "passed",
+    "ociAmd64OfflineSmoke": "passed: network disabled, capabilities dropped, read-only root filesystem"
+  },
+  "acceptance": {
+    "linuxDataplane": "not_tested",
+    "rebootAndDNSRecovery": "not_tested",
+    "containerDataplane": "not_tested",
+    "hostMigrationAndRollback": "not_tested",
+    "canary24h": "not_tested",
+    "stablePromotion": "not_requested"
+  },
+  "reviewValidation": {
+    "recordedAt": "2026-11-23T06:56:44.844218+00:00",
+    "pipelineUnitTests": {
+      "status": "passed",
+      "cases": 15
+    },
+    "goUnitTests": "passed",
+    "developmentPackageWithUnbornHEAD": "passed",
+    "linuxCrossBuild": [
+      "amd64",
+      "arm64"
+    ],
+    "offlineSmoke": "passed",
+    "elevatedLogOwnershipAndRotation": "passed: root container; initiating UID 1000 read check",
+    "concurrentRuntimeSocketPermissions": "passed: exclusive lock loser preserves directory mode 0711 in isolated root container",
+    "productionSignature": "not_tested: requires GitHub OIDC release workflow"
+  }
+}

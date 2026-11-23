@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "servers": [
+    {
+      "product": "Pangolin EE",
+      "version": "1.26.0",
+      "status": "not_tested",
+      "managedClientSettings": "unsupported",
+      "evidence": []
+    }
+  ],
+  "stages": {
+    "A": "not_tested",
+    "A1-runtime": "not_tested",
+    "B": "deferred",
+    "C": "deferred",
+    "D": "deferred"
+  },
+  "canary": {
+    "minimumHours": 24,
+    "status": "not_tested",
+    "evidence": []
+  }
+}

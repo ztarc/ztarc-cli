@@ -1,0 +1,30 @@
+[
+  {
+    "path": "vendor/github.com/fosrl/olm/dns/platform/file.go",
+    "from": "/etc/resolv.conf.olm.backup",
+    "to": "/etc/resolv.conf.ztarc-cli.backup",
+    "count": 1,
+    "reason": "Separate ZTARC DNS recovery state from standalone Olm and desktop clients"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/dns/platform/network_manager.go",
+    "from": "olm-dns.conf",
+    "to": "ztarc-cli-dns.conf",
+    "count": 2,
+    "reason": "Separate NetworkManager configuration ownership"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/dns/platform/network_manager.go",
+    "from": "01-olm-dns",
+    "to": "01-ztarc-cli-dns",
+    "count": 1,
+    "reason": "Separate NetworkManager dispatcher ownership"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/dns/override/watchdog_spawn_unix.go",
+    "from": "os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644",
+    "to": "os.O_CREATE|os.O_WRONLY|os.O_APPEND|syscall.O_NOFOLLOW, 0o600",
+    "count": 1,
+    "reason": "Watchdog logs must be owner-only and must not follow a symlink; CLI supplies a root-controlled runtime log path"
+  }
+]

@@ -1,0 +1,9 @@
+**
+!dist/
+!dist/ztarc-cli_*
+!packaging/
+!packaging/docker/
+!packaging/docker/entrypoint.sh
+!LICENSE
+!NOTICE
+!THIRD_PARTY_NOTICES

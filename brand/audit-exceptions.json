@@ -1,0 +1,262 @@
+[
+  {
+    "path": "cmd/root.go",
+    "literal": "\"PANGOLIN_CLIENT_ID\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/root.go",
+    "literal": "\"PANGOLIN_CLIENT_SECRET\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "internal/api/global.go",
+    "literal": "\"pangolin-cli\"",
+    "reason": "Native wire agent identity; product display version and branding are separate."
+  },
+  {
+    "path": "internal/api/client.go",
+    "literal": "\"pangolin-cli-%s\"",
+    "reason": "Native wire agent identity; product display version and branding are separate."
+  },
+  {
+    "path": "internal/companion/provider_darwin.go",
+    "literal": "\"Pangolin\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/companion/provider_windows.go",
+    "literal": "\"Pangolin\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/companion/secrets_linux.go",
+    "literal": "\"/run/pangolin-client/manager.sock\"",
+    "reason": "Unreachable Linux desktop compatibility implementation; audited provider returns nil and CLI socket resolution never falls back to desktop."
+  },
+  {
+    "path": "internal/companion/secrets_linux.go",
+    "literal": "\"connect to the Pangolin client daemon: %w\"",
+    "reason": "Unreachable Linux desktop compatibility implementation; audited provider returns nil and CLI socket resolution never falls back to desktop."
+  },
+  {
+    "path": "internal/companion/status.go",
+    "literal": "\"Pangolin Linux client is not installed\"",
+    "reason": "Unreachable Linux desktop compatibility implementation; audited provider returns nil and CLI socket resolution never falls back to desktop."
+  },
+  {
+    "path": "internal/companion/provider_linux.go",
+    "literal": "\"pangolin-client\"",
+    "reason": "Unreachable Linux desktop compatibility implementation; audited provider returns nil and CLI socket resolution never falls back to desktop."
+  },
+  {
+    "path": "internal/notice/notices.go",
+    "literal": "\"https://pangolin.net/downloads\"",
+    "reason": "Unreachable upstream notice package; ZTARC root dispatch does not import or execute it."
+  },
+  {
+    "path": "internal/notice/notices.go",
+    "literal": "\"A Pangolin desktop client is now available for Linux.\"",
+    "reason": "Unreachable upstream notice package; ZTARC root dispatch does not import or execute it."
+  },
+  {
+    "path": "internal/olm/client.go",
+    "literal": "\"Pangolin CLI\"",
+    "reason": "Native wire agent identity; product display version and branding are separate."
+  },
+  {
+    "path": "internal/olm/client_linux.go",
+    "literal": "\"Pangolin Linux\"",
+    "reason": "Unreachable Linux desktop compatibility implementation; audited provider returns nil and CLI socket resolution never falls back to desktop."
+  },
+  {
+    "path": "internal/olm/client_linux.go",
+    "literal": "\"/run/pangolin-client/olm.sock\"",
+    "reason": "Unreachable Linux desktop compatibility implementation; audited provider returns nil and CLI socket resolution never falls back to desktop."
+  },
+  {
+    "path": "internal/olm/client_windows.go",
+    "literal": "\"Pangolin Windows\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/olm/companion_darwin.go",
+    "literal": "\"Pangolin macOS\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/svcmgr/svcmgr.go",
+    "literal": "\"PANGOLIN_SERVICE_SUPERVISED\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_darwin.go",
+    "literal": "\"/var/log/pangolin\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_darwin.go",
+    "literal": "\"net.pangolin.\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_darwin.go",
+    "literal": "\"pangolin-\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_windows.go",
+    "literal": "\"__pangolin-service-host\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_windows.go",
+    "literal": "\"__pangolin-service-host-olm\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/svcmgr/svcmgr_windows.go",
+    "literal": "\"pangolin\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "internal/utils/auth.go",
+    "literal": "\"Please rerun this command as sudo. This is a one time thing for Pangolin to setup your machine.\"",
+    "reason": "Retained inactive upstream compatibility symbol/cache; no executable ZTARC updater path calls it."
+  },
+  {
+    "path": "internal/version/cache.go",
+    "literal": "\"pangolin-update-check.json\"",
+    "reason": "Retained inactive upstream compatibility symbol/cache; no executable ZTARC updater path calls it."
+  },
+  {
+    "path": "cmd/configure/codex.go",
+    "literal": "\"pangolin\"",
+    "reason": "Retained inactive upstream compatibility symbol/cache; no executable ZTARC updater path calls it."
+  },
+  {
+    "path": "cmd/configure/codex.go",
+    "literal": "\"PANGOLIN_API_KEY\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/configure/codex.go",
+    "literal": "\"Codex reads its API key from the PANGOLIN_API_KEY environment variable; run:\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/configure/codex.go",
+    "literal": "\"If you set PANGOLIN_API_KEY for Codex, unset it; run:\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/configure/configure.go",
+    "literal": "\"pangolin-key-\"",
+    "reason": "Retained inactive upstream compatibility symbol/cache; no executable ZTARC updater path calls it."
+  },
+  {
+    "path": "cmd/scp/exec_scp_env.go",
+    "literal": "\"PANGOLIN_SCP_BINARY\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/scp/runner_exec_unix.go",
+    "literal": "\"pangolin-ssh-key-*\"",
+    "reason": "Retained inactive upstream compatibility symbol/cache; no executable ZTARC updater path calls it."
+  },
+  {
+    "path": "cmd/scp/runner_exec_unix.go",
+    "literal": "\"pangolin-ssh-cert-*\"",
+    "reason": "Retained inactive upstream compatibility symbol/cache; no executable ZTARC updater path calls it."
+  },
+  {
+    "path": "cmd/scp/runner_exec_windows.go",
+    "literal": "\"pangolin-ssh-key-*\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "cmd/scp/runner_exec_windows.go",
+    "literal": "\"pangolin-ssh-cert-*\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "cmd/service/client.go",
+    "literal": "\"PANGOLIN_CLIENT_ID\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/service/client.go",
+    "literal": "\"PANGOLIN_CLIENT_SECRET\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/service/client.go",
+    "literal": "\"PANGOLIN_ENDPOINT\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/service/client.go",
+    "literal": "\"PANGOLIN_ORG\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/ssh/exec_ssh_env.go",
+    "literal": "\"PANGOLIN_SSH_BINARY\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/ssh/runner_exec_unix.go",
+    "literal": "\"pangolin-ssh-key-*\"",
+    "reason": "Retained inactive upstream compatibility symbol/cache; no executable ZTARC updater path calls it."
+  },
+  {
+    "path": "cmd/ssh/runner_exec_unix.go",
+    "literal": "\"pangolin-ssh-cert-*\"",
+    "reason": "Retained inactive upstream compatibility symbol/cache; no executable ZTARC updater path calls it."
+  },
+  {
+    "path": "cmd/ssh/runner_exec_windows.go",
+    "literal": "\"pangolin-ssh-key-*\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "cmd/ssh/runner_exec_windows.go",
+    "literal": "\"pangolin-ssh-cert-*\"",
+    "reason": "Deferred upstream platform implementation; not built or advertised by the Linux release."
+  },
+  {
+    "path": "cmd/up/client/service_windows.go",
+    "literal": "\"PANGOLIN_CLIENT_ID\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/up/client/service_windows.go",
+    "literal": "\"PANGOLIN_CLIENT_SECRET\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "literal": "\"PANGOLIN_CLIENT_ID\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "literal": "\"PANGOLIN_CLIENT_SECRET\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "literal": "\"PANGOLIN_ENDPOINT\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/up/client/client.go",
+    "literal": "\"PANGOLIN_ORG\"",
+    "reason": "Native compatibility environment identifier used by CLI/engine; not product branding."
+  },
+  {
+    "path": "cmd/auth/login/login.go",
+    "literal": "\"pangolin-cli\"",
+    "reason": "Retained inactive upstream compatibility symbol/cache; no executable ZTARC updater path calls it."
+  }
+]

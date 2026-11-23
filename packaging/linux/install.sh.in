@@ -1,0 +1,60 @@
+#!/bin/sh
+# Immutable ZTARC binary installer. Does not enroll or modify services.
+set -eu
+umask 077
+version='@VERSION@'
+[ "$(id -u)" = 0 ] || { echo 'Run installer as root.' >&2; exit 1; }
+[ "$(uname -s)" = Linux ] || { echo 'Only Linux is packaged.' >&2; exit 1; }
+case "$(uname -m)" in
+ x86_64) arch=amd64; expected='@AMD64_SHA256@';;
+ aarch64|arm64) arch=arm64; expected='@ARM64_SHA256@';;
+ *) echo 'Unsupported architecture.' >&2; exit 1;;
+esac
+for tool in curl sha256sum flock readlink mktemp stat tar sync; do command -v "$tool" >/dev/null || { echo "Missing $tool" >&2; exit 1; }; done
+# Keep host lock and temporary bytes under a root-controlled directory.
+[ ! -L /run/ztarc-cli-install ] || exit 1
+mkdir -p /run/ztarc-cli-install
+[ "$(stat -c '%u:%a' /run/ztarc-cli-install)" = '0:700' ] || { echo 'Unsafe install lock directory.' >&2; exit 1; }
+exec 9>/run/ztarc-cli-install/lock
+flock -n 9 || { echo 'Another installation is running.' >&2; exit 1; }
+[ ! -L /usr/local/bin ] && [ ! -L /usr/local/bin/ztarc-cli ] || { echo 'Refusing symlink destination.' >&2; exit 1; }
+mkdir -p /usr/local/bin
+for dir in /usr /usr/local /usr/local/bin; do
+ [ ! -L "$dir" ] && [ "$(stat -c '%u' "$dir")" = 0 ] || { echo 'Unsafe binary destination.' >&2; exit 1; }
+ perms=$(stat -c '%a' "$dir")
+ case "$perms" in *[2367][0-7]|*[0-7][2367]) echo 'Writable binary destination.' >&2; exit 1;; esac
+done
+[ ! -e /usr/local/bin/ztarc-cli ] || [ -f /usr/local/bin/ztarc-cli ] || { echo 'Destination is not a regular file.' >&2; exit 1; }
+# Refuse a binary currently mapped by any process, including an older renamed inode.
+for exe in /proc/[0-9]*/exe; do
+ target=$(readlink "$exe" 2>/dev/null || true)
+ case "$target" in /usr/local/bin/ztarc-cli*) echo 'Stop ZTARC runtime before updating.' >&2; exit 1;; esac
+done
+work=$(mktemp -d /usr/local/bin/.ztarc-install.XXXXXXXX)
+trap 'rm -rf "$work"' EXIT HUP INT TERM
+file="ztarc-cli_${version}_linux_${arch}"
+curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "https://dl.ztarc.io/cli/${version}/${file}" -o "$work/ztarc-cli"
+printf '%s  %s\n' "$expected" "$work/ztarc-cli" | sha256sum -c - >/dev/null
+curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "https://dl.ztarc.io/cli/${version}/ztarc-cli_${version}_licenses.tar.gz" -o "$work/licenses.tar.gz"
+printf '%s  %s\n' '@LICENSES_SHA256@' "$work/licenses.tar.gz" | sha256sum -c - >/dev/null
+for dir in /usr /usr/local /usr/local/share; do [ ! -L "$dir" ] || { echo 'Unsafe notices directory.' >&2; exit 1; }; done
+mkdir -p /usr/local/share/ztarc-cli
+[ ! -L /usr/local/share/ztarc-cli ] || exit 1
+notices="/usr/local/share/ztarc-cli/$version"
+if [ -e "$notices" ]; then
+ [ ! -L "$notices" ] && [ ! -L "$notices/.archive-sha256" ] && [ "$(cat "$notices/.archive-sha256")" = '@LICENSES_SHA256@' ] || { echo 'Existing notices do not match this release.' >&2; exit 1; }
+else
+ mkdir -m 0755 "$notices"
+ tar -xzf "$work/licenses.tar.gz" -C "$notices"
+ printf '%s\n' '@LICENSES_SHA256@' > "$notices/.archive-sha256"
+fi
+chmod 0755 "$work/ztarc-cli"
+if [ -f /usr/local/bin/ztarc-cli ]; then
+ [ ! -L /usr/local/bin/ztarc-cli.previous ] || exit 1
+ cp -p /usr/local/bin/ztarc-cli "$work/previous"
+ mv -f "$work/previous" /usr/local/bin/ztarc-cli.previous
+fi
+mv -f "$work/ztarc-cli" /usr/local/bin/ztarc-cli
+sync -f /usr/local/bin/ztarc-cli
+sync -f /usr/local/bin
+printf 'Installed ZTARC CLI %s. Enrollment and service installation are separate.\n' "$version"

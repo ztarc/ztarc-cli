@@ -1,0 +1,76 @@
+{
+  "cmd/root.go": {
+    "required": [
+      "Use:          \"ztarc-cli\"",
+      "policy.Guard(cmd)",
+      "dispatchRuntime()"
+    ],
+    "forbidden": [
+      "CheckForUpdateAsync"
+    ]
+  },
+  "cmd/up/client/client.go": {
+    "required": [
+      "launchRuntime(cmd.Context(), opts, cfg)",
+      "securefile.ReadMachine",
+      "prepareClientRuntime()"
+    ],
+    "forbidden": [
+      "exec.Command(\"sh\"",
+      "shellCmd :=",
+      "\"--secret\", olmSecret"
+    ]
+  },
+  "cmd/up/site/site.go": {
+    "required": [
+      "policy.SiteInput(args)",
+      "return \"/etc/ztarc/site.json\", nil",
+      "cfg.BlueprintFile != \"\" || cfg.ProvisioningBlueprintFile != \"\" || cfg.ProvisioningKey != \"\""
+    ],
+    "forbidden": [
+      "CheckAndSelfUpdate",
+      "startSelfUpdateChecks",
+      "newt/updates"
+    ]
+  },
+  "internal/config/config.go": {
+    "required": [
+      "\".config\", \"ztarc-cli\"",
+      "return securefile.Write(path, data)"
+    ],
+    "forbidden": [
+      "return c.v.WriteConfig()"
+    ]
+  },
+  "internal/olm/client.go": {
+    "required": [
+      "AgentName = \"Pangolin CLI\""
+    ]
+  },
+  "internal/api/global.go": {
+    "required": [
+      "AgentName:         \"pangolin-cli\""
+    ]
+  },
+  "cmd/update/update_unix.go": {
+    "required": [
+      "Automatic updates are disabled"
+    ],
+    "forbidden": [
+      "exec.Command",
+      "http.Get"
+    ]
+  },
+  "internal/version/check.go": {
+    "forbidden": [
+      "net/http",
+      "http.Get",
+      "http.NewRequest"
+    ]
+  },
+  "internal/companion/provider_linux.go": {
+    "required": [
+      "func platformProvider() Provider {\n\treturn nil\n}"
+    ]
+  }
+}
