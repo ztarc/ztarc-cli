@@ -42,7 +42,7 @@ jobs:
         run: python3 scripts/container.py
       - name: Install pinned Cosign from verified Go module
         env:
-          GOTOOLCHAIN: go1.26.10
+          GOTOOLCHAIN: go1.27.4
           GOBIN: ${{ github.workspace }}/build/tools
         run: |
           go install github.com/sigstore/cosign/v3/cmd/cosign@v3.1.4
