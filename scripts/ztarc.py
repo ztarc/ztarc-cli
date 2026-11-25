@@ -84,7 +84,7 @@ def audit():
                 raise ValueError(f'unreviewed upstream identifier: {rel}:{n}: {line.strip()}')
     for rule in json.loads((ROOT/'release/dependency-transforms.json').read_text()):
         content=(SRC/rule['path']).read_text()
-        if rule['from'] in content or rule['to'] not in content: raise ValueError('dependency namespace audit failed')
+        if rule['from'] in content.replace(rule['to'], '') or content.count(rule['to']) < rule['count']: raise ValueError('dependency transformation audit failed: '+rule['path'])
     for pkg in ('vendor/github.com/fosrl/newt/newt','vendor/github.com/fosrl/olm/olm'):
         for path in (SRC/pkg).rglob('*.go'):
             if path.name.endswith('_test.go'): continue

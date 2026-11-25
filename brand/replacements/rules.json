@@ -26,7 +26,7 @@
   {
     "path": "internal/api/client.go",
     "from": "\"https://app.pangolin.net\"",
-    "to": "endpoint.DefaultURL()",
+    "to": "endpointpkg.DefaultURL()",
     "count": 2
   },
   {

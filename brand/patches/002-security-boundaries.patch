@@ -1,0 +1,472 @@
+--- a/cmd/root.go
++++ b/cmd/root.go
+@@ -32,6 +32,7 @@
+ 	"github.com/fosrl/cli/internal/config"
+ 	"github.com/fosrl/cli/internal/logger"
+ 	"github.com/fosrl/cli/internal/policy"
++ "github.com/fosrl/cli/internal/securefile"
+ 	"github.com/spf13/cobra"
+ )
+ 
+@@ -102,10 +103,7 @@
+ 		return cmd, nil
+ 	}
+ 
+-	cfg, err := config.LoadConfig()
+-	if err != nil {
+-		return nil, err
+-	}
++	cfg := config.RuntimeConfig("/var/log/ztarc-cli/client.log")
+ 
+ 	if err := cfg.Validate(); err != nil {
+ 		return nil, err
+@@ -121,7 +119,7 @@
+ }
+ 
+ func commandNeedsAuthInit(cmd *cobra.Command) bool {
+- if cmd.Name() == "version" || cmd.Name() == "update" { return false }
++ if cmd.Name() == "version" || cmd.Name() == "update" || cmd.Name() == "reset-dns" { return false }
+  if (cmd.Name() == "client" || cmd.Name() == "up") && hasMachineClientCredentials(cmd) { return false }
+ 	// `up site` runs Newt standalone, exactly like the newt binary itself -
+ 	// it takes its own id/secret/endpoint and never needs a Pangolin
+@@ -235,9 +233,24 @@
+ func mainCommandPreRun(cmd *cobra.Command, args []string) error {
+ 	if err := policy.Guard(cmd); err != nil { return err }
+  cfg := config.ConfigFromContext(cmd.Context())
+-	if cfg == nil {
+-		return fmt.Errorf("configuration not loaded")
+-	}
++ if os.Geteuid() == 0 {
++  if err := os.Setenv("PATH", "/usr/sbin:/usr/bin:/sbin:/bin"); err != nil { return err }
++ }
++ if commandNeedsAuthInit(cmd) || commandHasAncestor(cmd, "config") {
++  var err error
++  cfg, err = config.LoadConfig()
++  if err != nil { return err }
++  if err = cfg.Validate(); err != nil { return err }
++  cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
++ }
++ if !commandNeedsAuthInit(cmd) && os.Geteuid() != 0 && (cmd.Name() == "client" || cmd.Name() == "up") {
++  dir, err := config.GetPangolinConfigDir()
++  if err != nil { return err }
++  cfg = config.RuntimeConfig(filepath.Join(dir, "logs", "client.log"))
++  cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
++ }
++ if cfg == nil { return fmt.Errorf("configuration not loaded") }
++ logger.InitLogger(cfg.LogLevel)
+ 
+  if cmd.Name()=="version" || cmd.Name()=="update" { return nil }
+ 
+@@ -272,11 +285,12 @@
+ // Make sure all required directories exist once
+ // before executing any subcommands.
+ func ensureRuntimeDirs(cfg *config.Config) {
++ if os.Geteuid() == 0 { return }
+ 	configDir, err := config.GetPangolinConfigDir()
+ 	if err != nil {
+ 		logger.Warning("failed to create pangolin configuration directory: %v", err)
+ 	} else {
+-		err = os.MkdirAll(configDir, 0o700)
++		err = securefile.EnsureDir(configDir)
+ 		if err != nil {
+ 			logger.Warning("failed to create %s: %v", configDir, err)
+ 		}
+@@ -285,7 +299,7 @@
+ 	if cfg.LogFile != "" {
+ 		logPathDirname := filepath.Dir(cfg.LogFile)
+ 
+-		err = os.MkdirAll(logPathDirname, 0o700)
++		err = securefile.EnsureDir(logPathDirname)
+ 		if err != nil {
+ 			logger.Warning("failed to create %s: %v", logPathDirname, err)
+ 		}
+--- a/cmd/resetdns/resetdns_unix.go
++++ b/cmd/resetdns/resetdns_unix.go
+@@ -3,6 +3,7 @@
+ package resetdns
+ 
+ import (
++ "github.com/fosrl/cli/internal/policy"
+ 	"errors"
+ 	"os"
+ 
+@@ -40,7 +41,7 @@
+ 				return errors.New("reset-dns must be run as root (or with sudo) to modify system DNS settings")
+ 			}
+ 
+-			if err := dnsOverride.ForceResetDNS(interfaceName); err != nil {
++			if err := policy.InterfaceName(interfaceName); err != nil { return err }; if err := dnsOverride.ForceResetDNS(interfaceName); err != nil {
+ 				logger.Error("DNS reset failed: %v", err)
+ 				return err
+ 			}
+--- a/cmd/auth/login/login.go
++++ b/cmd/auth/login/login.go
+@@ -321,7 +321,9 @@
+ 		hostname = "https://" + hostname
+ 	}
+ 
+-	// Perform web login
++	if err := endpoint.Validate(hostname); err != nil { return err }
++
++ // Perform web login
+ 	sessionToken, err := loginWithWeb(hostname, cfg.SessionCookieName, knownEmail)
+ 	if err != nil {
+ 		logger.Error("%v", err)
+--- a/cmd/up/site/site.go
++++ b/cmd/up/site/site.go
+@@ -7,6 +7,7 @@
+ 
+ import (
+  "github.com/fosrl/cli/internal/redact"
++ "github.com/fosrl/cli/internal/endpoint"
+ 	"context"
+ 	"fmt"
+ 	"os"
+@@ -67,6 +68,9 @@
+ 	}
+ 
+ 	if cfg.BlueprintFile != "" || cfg.ProvisioningBlueprintFile != "" || cfg.ProvisioningKey != "" { return fmt.Errorf("blueprint/provisioning inputs are deferred") }
++ if cfg.UpdownScript != "" || cfg.PprofEnabled { return fmt.Errorf("updown scripts and pprof are deferred") }
++ cfg.DisableSSH = true
++ if err := endpoint.Validate(cfg.Endpoint); err != nil { return err }
+  redact.Register(cfg.Secret)
+  if cfg.UseNativeMainInterface {
+ 		if err := permissions.CheckNativeInterfacePermissions(); err != nil {
+--- a/cmd/up/client/client.go
++++ b/cmd/up/client/client.go
+@@ -467,6 +467,8 @@
+ }
+ 
+ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string) error {
++ if err := policy.InterfaceName(opts.InterfaceName); err != nil { return err }
++ if os.Geteuid() == 0 && !opts.RuntimeSnapshot && opts.ID != "" && opts.Secret != "" { olm.RuntimeUID = 0 }
+ 	apiClient, _ := api.ClientFromContext(cmd.Context())
+ 	accountStore, ok := config.LookupAccountStore(cmd.Context()); if !ok { accountStore = config.NewReadOnlyAccountStore("",nil) }
+ 	cfg := config.ConfigFromContext(cmd.Context())
+@@ -587,6 +589,7 @@
+ 
+ 		olmID = activeAccount.OlmCredentials.ID
+ 		olmSecret = activeAccount.OlmCredentials.Secret
++ redact.Register(olmSecret)
+ 	}
+ 
+ 	orgID := opts.OrgID
+@@ -936,8 +939,9 @@
+ 
+ // rotateLogFile handles daily log rotation
+ func rotateLogFile(logDir string, logFile string) error {
++ if os.Geteuid() == 0 { return nil }
+ 	// Get current log file info
+-	info, err := os.Stat(logFile)
++	info, err := os.Lstat(logFile)
+ 	if err != nil {
+ 		if os.IsNotExist(err) {
+ 			return nil // No current log file to rotate
+@@ -971,6 +975,7 @@
+ 
+ // cleanupOldLogFiles removes log files older than specified days
+ func cleanupOldLogFiles(logDir string, daysToKeep int) {
++ if os.Geteuid() == 0 { return }
+ 	cutoff := time.Now().AddDate(0, 0, -daysToKeep)
+ 	files, err := os.ReadDir(logDir)
+ 	if err != nil {
+--- a/internal/api/client.go
++++ b/internal/api/client.go
+@@ -14,7 +14,7 @@
+ 	"time"
+ 
+ 	"github.com/fosrl/cli/internal/config"
+-	"github.com/fosrl/cli/internal/endpoint"
++	endpointpkg "github.com/fosrl/cli/internal/endpoint"
+ 	"github.com/fosrl/cli/internal/version"
+ 	yaml "go.yaml.in/yaml/v3"
+ )
+@@ -39,7 +39,9 @@
+ 		baseURL = "https://" + baseURL
+ 	}
+ 
+-	var session ClientSession
++	if err := endpointpkg.Validate(baseURL); err != nil { return nil, err }
++
++ var session ClientSession
+ 	if config.APIKey != "" {
+ 		session = NewIntegrationAPIKeySession()
+ 		session.APIKey = config.APIKey
+@@ -92,6 +94,7 @@
+ // request is the core method that handles all HTTP requests
+ func (c *Client) request(method, endpoint string, payload interface{}, result interface{}, opts ...RequestOptions) error {
+ 	// Build URL
++ if err := endpointpkg.Validate(c.BaseURL); err != nil { return err }
+ 	requestURL, err := c.buildURL(endpoint, opts...)
+ 	if err != nil {
+ 		return fmt.Errorf("failed to build URL: %w", err)
+@@ -132,6 +135,7 @@
+ 
+ 	// Create HTTP client and execute request
+ 	httpClient := &http.Client{
++ CheckRedirect: endpointpkg.CheckRedirect,
+ 		Timeout: c.HTTPClient.Timeout,
+ 	}
+ 
+@@ -242,7 +246,8 @@
+ 	}
+ 	baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
+ 
+-	sess := NewIntegrationAPIKeySession()
++	if err := endpointpkg.Validate(baseURL); err != nil { return nil, err }
++ sess := NewIntegrationAPIKeySession()
+ 	sess.APIKey = apiKey
+ 	sess.SessionCookieName = c.Session.SessionCookieName
+ 	sess.CSRFToken = c.Session.CSRFToken
+@@ -287,7 +292,8 @@
+ 
+ // ListUserOrgs lists organizations for a user
+ func (c *Client) ListUserOrgs(userID string) (*ListUserOrgsResponse, error) {
+-	path := fmt.Sprintf("/user/%s/orgs", userID)
++ if err := endpointpkg.ValidateID(userID); err != nil { return nil, err }
++	path := fmt.Sprintf("/user/%s/orgs", url.PathEscape(userID))
+ 	var response ListUserOrgsResponse
+ 	err := c.Get(path, &response)
+ 	if err != nil {
+@@ -298,10 +304,11 @@
+ 
+ // CreateOlm creates an OLM for a user
+ func (c *Client) CreateOlm(userID, name string) (*CreateOlmResponse, error) {
++ if err := endpointpkg.ValidateID(userID); err != nil { return nil, err }
+ 	requestBody := CreateOlmRequest{
+ 		Name: name,
+ 	}
+-	path := fmt.Sprintf("/user/%s/olm", userID)
++	path := fmt.Sprintf("/user/%s/olm", url.PathEscape(userID))
+ 	var response CreateOlmResponse
+ 	err := c.Put(path, requestBody, &response)
+ 	if err != nil {
+@@ -313,7 +320,10 @@
+ // GetUserOlm gets an OLM for a user by userId and olmId
+ // If orgID is provided, it will be passed as a query parameter
+ func (c *Client) GetUserOlm(userID, olmID string, orgID ...string) (*Olm, error) {
+-	path := fmt.Sprintf("/user/%s/olm/%s", userID, olmID)
++ if err := endpointpkg.ValidateID(userID); err != nil { return nil, err }
++ if err := endpointpkg.ValidateID(olmID); err != nil { return nil, err }
++ for _, id := range orgID { if err := endpointpkg.ValidateID(id); err != nil { return nil, err } }
++	path := fmt.Sprintf("/user/%s/olm/%s", url.PathEscape(userID), url.PathEscape(olmID))
+ 	var olm Olm
+ 
+ 	var opts []RequestOptions
+@@ -339,11 +349,12 @@
+ // for device reinstalls so that a new device isn't always
+ // created on the server side.
+ func (c *Client) RecoverOlmFromFingerprint(userID string, platformFingerprint string) (*RecoverOlmResponse, error) {
++ if err := endpointpkg.ValidateID(userID); err != nil { return nil, err }
+ 	requestBody := RecoverOlmRequest{
+ 		PlatformFingerprint: platformFingerprint,
+ 	}
+ 
+-	path := fmt.Sprintf("/user/%s/olm/recover", userID)
++	path := fmt.Sprintf("/user/%s/olm/recover", url.PathEscape(userID))
+ 	var response RecoverOlmResponse
+ 	err := c.Post(path, requestBody, &response)
+ 	if err != nil {
+@@ -355,7 +366,8 @@
+ 
+ // GetOrg gets an organization by ID
+ func (c *Client) GetOrg(orgID string) (*GetOrgResponse, error) {
+-	path := fmt.Sprintf("/org/%s", orgID)
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
++	path := fmt.Sprintf("/org/%s", url.PathEscape(orgID))
+ 	var response GetOrgResponse
+ 	err := c.Get(path, &response)
+ 	if err != nil {
+@@ -366,7 +378,9 @@
+ 
+ // CheckOrgUserAccess checks if a user has access to an organization
+ func (c *Client) CheckOrgUserAccess(orgID, userID string) (*CheckOrgUserAccessResponse, error) {
+-	path := fmt.Sprintf("/org/%s/user/%s/check", orgID, userID)
++ if err := endpointpkg.ValidateID(userID); err != nil { return nil, err }
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
++	path := fmt.Sprintf("/org/%s/user/%s/check", url.PathEscape(orgID), url.PathEscape(userID))
+ 	var response CheckOrgUserAccessResponse
+ 	err := c.Get(path, &response)
+ 	if err != nil {
+@@ -384,7 +398,8 @@
+ 
+ // ListUserResourceAliases returns one page of host-mode private site resource aliases for the user in the org.
+ func (c *Client) ListUserResourceAliases(orgID string, page, pageSize int, opts ListUserResourceAliasesOptions) (*ListUserResourceAliasesData, error) {
+-	path := fmt.Sprintf("/org/%s/user-resource-aliases", url.PathEscape(orgID))
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
++	path := fmt.Sprintf("/org/%s/user-resource-aliases", url.PathEscape(orgID))
+ 	var data ListUserResourceAliasesData
+ 	query := map[string]string{
+ 		"page":     strconv.Itoa(page),
+@@ -421,7 +436,8 @@
+ // Non-inference resources (e.g. plain "http") can't act as an AI gateway, so
+ // they're excluded server-side rather than filtered out here.
+ func (c *Client) ListLauncherResources(orgID string, opts ListLauncherResourcesOptions) (*ListLauncherResourcesData, error) {
+-	path := fmt.Sprintf("/org/%s/launcher/resources", url.PathEscape(orgID))
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
++	path := fmt.Sprintf("/org/%s/launcher/resources", url.PathEscape(orgID))
+ 	page := opts.Page
+ 	if page < 1 {
+ 		page = 1
+@@ -451,8 +467,9 @@
+ // ListGatewayResources returns every gateway-mode site resource in the org
+ // (with the IDs of the sites backing each one), fetching all pages.
+ func (c *Client) ListGatewayResources(orgID string) ([]SiteResource, error) {
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
+ 	const pageSize = 100
+-	path := fmt.Sprintf("/org/%s/site-resources", url.PathEscape(orgID))
++	path := fmt.Sprintf("/org/%s/site-resources", url.PathEscape(orgID))
+ 
+ 	var gateways []SiteResource
+ 	for page := 1; ; page++ {
+@@ -485,7 +502,8 @@
+ // GetResourceByNiceID fetches a resource's full details (including resourceGuid,
+ // not present on LauncherResource) by org + niceId.
+ func (c *Client) GetResourceByNiceID(orgID, niceID string) (*GetResourceData, error) {
+-	path := fmt.Sprintf("/org/%s/resource/%s", url.PathEscape(orgID), url.PathEscape(niceID))
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
++	path := fmt.Sprintf("/org/%s/resource/%s", url.PathEscape(orgID), url.PathEscape(niceID))
+ 	var data GetResourceData
+ 	if err := c.Get(path, &data); err != nil {
+ 		return nil, err
+@@ -497,7 +515,8 @@
+ // (auto-created if missing) and any manual keys attributed to them, optionally
+ // scoped to a resource by GUID.
+ func (c *Client) ListMyVirtualApiKeys(orgID, resourceGuid string) (*ListMyVirtualApiKeysData, error) {
+-	path := fmt.Sprintf("/org/%s/my-virtual-api-keys", url.PathEscape(orgID))
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
++	path := fmt.Sprintf("/org/%s/my-virtual-api-keys", url.PathEscape(orgID))
+ 	var reqOpts []RequestOptions
+ 	if resourceGuid != "" {
+ 		reqOpts = []RequestOptions{{Query: map[string]string{"resourceGuid": resourceGuid}}}
+@@ -512,7 +531,8 @@
+ // GetMyVirtualApiKey fetches the decrypted secret for a virtual API key owned
+ // by the signed-in user.
+ func (c *Client) GetMyVirtualApiKey(orgID, virtualApiKeyID string) (*GetMyVirtualApiKeyData, error) {
+-	path := fmt.Sprintf("/org/%s/my-virtual-api-keys/%s", url.PathEscape(orgID), url.PathEscape(virtualApiKeyID))
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
++	path := fmt.Sprintf("/org/%s/my-virtual-api-keys/%s", url.PathEscape(orgID), url.PathEscape(virtualApiKeyID))
+ 	var data GetMyVirtualApiKeyData
+ 	if err := c.Get(path, &data); err != nil {
+ 		return nil, err
+@@ -522,7 +542,8 @@
+ 
+ // SignSSHKey signs an SSH public key for the given org and resource.
+ func (c *Client) SignSSHKey(orgID string, req SignSSHKeyRequest) (*SignSSHKeyData, error) {
+-	path := fmt.Sprintf("/org/%s/ssh/sign-key", orgID)
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
++	path := fmt.Sprintf("/org/%s/ssh/sign-key", url.PathEscape(orgID))
+ 	var data SignSSHKeyData
+ 	if err := c.Post(path, req, &data); err != nil {
+ 		return nil, err
+@@ -553,6 +574,7 @@
+ 
+ // GetMyDevice gets the current device information including user, organizations, and OLM
+ func (c *Client) GetMyDevice(olmID string) (*MyDeviceResponse, error) {
++ if err := endpointpkg.ValidateID(olmID); err != nil { return nil, err }
+ 	// Build query parameters
+ 	params := url.Values{}
+ 	params.Set("olmId", olmID)
+@@ -569,7 +591,8 @@
+ // user, or nil if it manages none. Servers that predate client settings answer
+ // 404, which means the same thing.
+ func (c *Client) GetMyClientSettings(orgID string) (*config.ClientSettings, error) {
+-	path := fmt.Sprintf("/org/%s/my-client-settings", url.PathEscape(orgID))
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
++	path := fmt.Sprintf("/org/%s/my-client-settings", url.PathEscape(orgID))
+ 	var response MyClientSettingsResponse
+ 	if err := c.Get(path, &response); err != nil {
+ 		return nil, err
+@@ -583,6 +606,8 @@
+ // be empty, in which case the server uses the olm's current client. Servers
+ // that predate machine client settings answer 404, which means no settings.
+ func (c *Client) GetOlmClientSettings(olmID, secret, orgID string) (*OlmClientSettingsResponse, error) {
++ if err := endpointpkg.ValidateID(olmID); err != nil { return nil, err }
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
+ 	body := map[string]string{"olmId": olmID, "secret": secret}
+ 	if orgID != "" {
+ 		body["orgId"] = orgID
+@@ -598,12 +623,14 @@
+ func (c *Client) TestConnection() (bool, error) {
+ 	// Create a temporary client with shorter timeout for connection test
+ 	testClient := &http.Client{
++ CheckRedirect: endpointpkg.CheckRedirect,
+ 		Timeout: 10 * time.Second,
+ 	}
+ 
+ 	// Use HEAD request to test connection
+ 	fullURL := c.BaseURL
+-	req, err := http.NewRequest("HEAD", fullURL, nil)
++	if err := endpointpkg.Validate(fullURL); err != nil { return false, err }
++ req, err := http.NewRequest("HEAD", fullURL, nil)
+ 	if err != nil {
+ 		return false, fmt.Errorf("failed to create request: %w", err)
+ 	}
+@@ -625,8 +652,10 @@
+ // Returns true if status is 200-299, 401, or 403 (server is up)
+ // Returns false with error if server is unreachable or returns other status codes
+ func (c *Client) CheckHealth() (bool, error) {
++ if err := endpointpkg.Validate(c.BaseURL); err != nil { return false, err }
+ 	// Create a temporary client with shorter timeout for health check
+ 	testClient := &http.Client{
++ CheckRedirect: endpointpkg.CheckRedirect,
+ 		Timeout: 10 * time.Second,
+ 	}
+ 
+@@ -710,6 +739,7 @@
+ // createHTTPClient creates an HTTP client with the specified timeout
+ func createHTTPClient(timeout time.Duration) *http.Client {
+ 	return &http.Client{
++ CheckRedirect: endpointpkg.CheckRedirect,
+ 		Timeout: timeout,
+ 	}
+ }
+@@ -808,7 +838,8 @@
+ 	}
+ 
+ 	// Create request
+-	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
++	if err := endpointpkg.Validate(url); err != nil { return nil, "", err }
++ httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+ 	if err != nil {
+ 		return nil, "", fmt.Errorf("failed to create request: %w", err)
+ 	}
+@@ -895,7 +926,8 @@
+ 	}
+ 
+ 	// Create request
+-	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
++	if err := endpointpkg.Validate(url); err != nil { return nil, err }
++ httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+ 	if err != nil {
+ 		return nil, fmt.Errorf("failed to create request: %w", err)
+ 	}
+@@ -949,11 +981,12 @@
+ 
+ 	// Build URL
+ 	baseURL := buildAPIBaseURL(client.BaseURL)
+-	endpoint := fmt.Sprintf("/auth/device-web-auth/poll/%s", code)
++	endpoint := fmt.Sprintf("/auth/device-web-auth/poll/%s", url.PathEscape(code))
+ 	url := baseURL + endpoint
+ 
+ 	// Create request
+-	httpReq, err := http.NewRequest(http.MethodGet, url, nil)
++	if err := endpointpkg.Validate(url); err != nil { return nil, "", err }
++ httpReq, err := http.NewRequest(http.MethodGet, url, nil)
+ 	if err != nil {
+ 		return nil, "", fmt.Errorf("failed to create request: %w", err)
+ 	}
+@@ -1007,11 +1040,12 @@
+ // the integration host with a base64-encoded JSON payload. The name is only used for user
+ // session mode.
+ func (c *Client) ApplyBlueprint(orgID string, name string, blueprint string) (*ApplyBlueprintResponse, error) {
++ if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
+ 	if strings.TrimSpace(orgID) == "" {
+ 		return nil, fmt.Errorf("org id is required")
+ 	}
+ 
+-	path := fmt.Sprintf("/org/%s/blueprint", orgID)
++	path := fmt.Sprintf("/org/%s/blueprint", url.PathEscape(orgID))
+ 
+ 	if c.Session.IsIntegrationAPIKey() {
+ 		var parsed interface{}

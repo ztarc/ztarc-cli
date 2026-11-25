@@ -6,7 +6,8 @@
       "dispatchRuntime()"
     ],
     "forbidden": [
-      "CheckForUpdateAsync"
+      "CheckForUpdateAsync",
+      "os.MkdirAll("
     ]
   },
   "cmd/up/client/client.go": {
@@ -25,7 +26,10 @@
     "required": [
       "policy.SiteInput(args)",
       "return \"/etc/ztarc/site.json\", nil",
-      "cfg.BlueprintFile != \"\" || cfg.ProvisioningBlueprintFile != \"\" || cfg.ProvisioningKey != \"\""
+      "cfg.BlueprintFile != \"\" || cfg.ProvisioningBlueprintFile != \"\" || cfg.ProvisioningKey != \"\"",
+      "cfg.DisableSSH = true",
+      "cfg.UpdownScript != \"\" || cfg.PprofEnabled",
+      "endpoint.Validate(cfg.Endpoint)"
     ],
     "forbidden": [
       "CheckAndSelfUpdate",
@@ -71,6 +75,51 @@
   "internal/companion/provider_linux.go": {
     "required": [
       "func platformProvider() Provider {\n\treturn nil\n}"
+    ]
+  },
+  "vendor/github.com/fosrl/newt/websocket/client.go": {
+    "required": [
+      "unsafe control-plane redirect",
+      "console endpoint requires HTTPS"
+    ],
+    "forbidden": [
+      "InsecureSkipVerify = true",
+      "logger.Debug(\"Received token:",
+      "logger.Debug(\"websocket: Received token:",
+      "logger.Debug(\"Token response body:"
+    ]
+  },
+  "vendor/github.com/fosrl/olm/websocket/client.go": {
+    "required": [
+      "unsafe control-plane redirect",
+      "console endpoint requires HTTPS"
+    ],
+    "forbidden": [
+      "InsecureSkipVerify = true",
+      "logger.Debug(\"Received token:",
+      "logger.Debug(\"websocket: Received token:",
+      "logger.Debug(\"Token response body:"
+    ]
+  },
+  "vendor/github.com/fosrl/newt/websocket/config.go": {
+    "required": [
+      "func (c *Client) saveConfig() error { return nil }"
+    ],
+    "forbidden": [
+      "os.WriteFile(configPath",
+      "InsecureSkipVerify = true"
+    ]
+  },
+  "internal/api/client.go": {
+    "forbidden": [
+      "url.PathEscape(url.PathEscape("
+    ]
+  },
+  "cmd/watchdog/watchdog_unix.go": {
+    "required": [
+      "prepareWatchdogRuntime(interfaceName)",
+      "policy.InterfaceName(interfaceName)",
+      "os.Setenv(\"PATH\", \"/usr/sbin:/usr/bin:/sbin:/bin\")"
     ]
   }
 }

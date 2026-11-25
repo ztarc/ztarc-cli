@@ -49,7 +49,7 @@ func parent(path string, create bool, rootOnly ...bool) (int, string, error) {
 			return -1, "", errors.New("cannot inspect credential directory")
 		}
 		// Root-owned sticky directories (e.g. /tmp) are safe for a private child.
-		if len(rootOnly) > 0 && rootOnly[0] && st.Uid != 0 || st.Mode&0022 != 0 && st.Mode&unix.S_ISVTX == 0 {
+		if st.Uid != 0 && (len(rootOnly) > 0 && rootOnly[0] || !allowedOwner(st.Uid, false)) || st.Mode&0022 != 0 && (st.Mode&unix.S_ISVTX == 0 || st.Uid != 0) {
 			unix.Close(fd)
 			return -1, "", errors.New("credential directory has unsafe ownership or write permissions")
 		}

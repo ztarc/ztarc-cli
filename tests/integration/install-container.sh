@@ -33,6 +33,8 @@ for scenario in missing-parent missing-bin existing; do
   [ "$(stat -c '%a' /usr/local)" = 755 ]
  fi
  [ "$(stat -c '%u:%a' /run/ztarc-cli-install)" = 0:700 ]
+ [ "$(stat -c '%a' /usr/local/share/ztarc-cli)" = 755 ]
+ setpriv --reuid=1000 --regid=1000 --clear-groups cat /usr/local/share/ztarc-cli/test.1/NOTICE >/dev/null
  [ "$(setpriv --reuid=1000 --regid=1000 --clear-groups /usr/local/bin/ztarc-cli)" = fixture-cli-ok ]
 done
 # Keep rejecting unsafe existing parents before downloading or installing.

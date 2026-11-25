@@ -40,9 +40,13 @@ curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "https:/
 printf '%s  %s\n' "$expected" "$work/ztarc-cli" | sha256sum -c - >/dev/null
 curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "https://dl.ztarc.io/cli/${version}/ztarc-cli_${version}_licenses.tar.gz" -o "$work/licenses.tar.gz"
 printf '%s  %s\n' '@LICENSES_SHA256@' "$work/licenses.tar.gz" | sha256sum -c - >/dev/null
-for dir in /usr /usr/local /usr/local/share; do [ ! -L "$dir" ] || { echo 'Unsafe notices directory.' >&2; exit 1; }; done
-mkdir -p /usr/local/share/ztarc-cli
-[ ! -L /usr/local/share/ztarc-cli ] || exit 1
+for dir in /usr /usr/local /usr/local/share /usr/local/share/ztarc-cli; do
+ [ ! -L "$dir" ] || { echo 'Unsafe notices directory.' >&2; exit 1; }
+ if [ ! -e "$dir" ]; then mkdir -m 0755 "$dir"; fi
+ [ -d "$dir" ] && [ "$(stat -c '%u' "$dir")" = 0 ] || exit 1
+ perms=$(stat -c '%a' "$dir")
+ case "$perms" in *[2367][0-7]|*[0-7][2367]) echo 'Writable notices directory.' >&2; exit 1;; esac
+done
 notices="/usr/local/share/ztarc-cli/$version"
 if [ -e "$notices" ]; then
  [ ! -L "$notices" ] && [ ! -L "$notices/.archive-sha256" ] && [ "$(cat "$notices/.archive-sha256")" = '@LICENSES_SHA256@' ] || { echo 'Existing notices do not match this release.' >&2; exit 1; }

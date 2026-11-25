@@ -19,8 +19,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -48,7 +50,20 @@ func launchRuntime(ctx context.Context, opts *ClientUpCmdOpts, cfg *config.Confi
 	if len(payload) > securefile.MaxSize {
 		return errors.New("runtime snapshot exceeds 1 MiB")
 	}
+	// Validate the destination before any privileged directory creation.
+	caller := ""
+	if options.RuntimeUID != 0 {
+		caller = strconv.Itoa(options.RuntimeUID)
+	}
+	if err = validateRuntimeCaller(options.RuntimeUID, cfg.LogFile, caller); err != nil {
+		return err
+	}
 	// Create private log directories before elevation so fresh installs keep user ownership.
+	if os.Geteuid() == 0 && options.RuntimeUID != 0 {
+		if st, e := os.Lstat(filepath.Dir(cfg.LogFile)); e != nil || !st.IsDir() || st.Mode()&os.ModeSymlink != 0 {
+			return errors.New("create user log directory before running under sudo")
+		}
+	}
 	if err = securefile.EnsureDir(filepath.Dir(cfg.LogFile)); err != nil {
 		return err
 	}
@@ -67,6 +82,9 @@ func launchRuntime(ctx context.Context, opts *ClientUpCmdOpts, cfg *config.Confi
 		child = exec.Command("sudo", "-n", "--", executable, "__ztarc-runtime")
 	}
 	child.Env = []string{"PATH=/usr/sbin:/usr/bin:/sbin:/bin", "LANG=C.UTF-8"}
+	if os.Geteuid() == 0 && options.RuntimeUID != 0 && os.Getenv("SUDO_UID") != "" {
+		child.Env = append(child.Env, "SUDO_UID="+os.Getenv("SUDO_UID"))
+	}
 	child.Stdin = bytes.NewReader(payload)
 	child.Stderr = os.Stderr
 	child.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
@@ -143,6 +161,15 @@ func ReceiveRuntime() error {
 	}
 	if o.ExitNode != "" || len(o.GatewaySiteIDs) > 0 || o.SubnetRouter {
 		return errors.New("stage B runtime options are deferred")
+	}
+	if err := validateRuntimeCaller(o.RuntimeUID, s.LogFile, os.Getenv("SUDO_UID")); err != nil {
+		return err
+	}
+	if err := policy.InterfaceName(o.InterfaceName); err != nil {
+		return err
+	}
+	if err := os.Setenv("PATH", "/usr/sbin:/usr/bin:/sbin:/bin"); err != nil {
+		return err
 	}
 	olm.RuntimeUID = o.RuntimeUID
 	os.Setenv("SUDO_UID", strconv.Itoa(o.RuntimeUID))
@@ -267,4 +294,35 @@ func acquireTunnelLock() (*tunnelLocks, error) {
 		return nil, errors.New("another ZTARC client tunnel is already active on this host")
 	}
 	return &tunnelLocks{runtime: f, install: install}, nil
+}
+
+// The privileged receiver trusts sudo's caller identity, never stdin's UID.
+func validateRuntimeCaller(uid int, logFile, sudoUID string) error {
+	expected := 0
+	if sudoUID != "" {
+		n, err := strconv.Atoi(sudoUID)
+		if err != nil || n < 0 {
+			return errors.New("invalid sudo caller identity")
+		}
+		expected = n
+	}
+	if uid != expected {
+		return errors.New("runtime UID does not match caller")
+	}
+	if uid == 0 {
+		if filepath.Clean(logFile) != "/var/log/ztarc-cli/client.log" {
+			return errors.New("unexpected root runtime log path")
+		}
+		return nil
+	}
+	account, err := user.LookupId(strconv.Itoa(uid))
+	if err != nil {
+		return errors.New("cannot resolve runtime caller")
+	}
+	base := filepath.Join(account.HomeDir, ".config", "ztarc-cli", "logs")
+	relative, err := filepath.Rel(base, logFile)
+	if err != nil || relative == "." || relative == ".." || filepath.IsAbs(relative) || strings.HasPrefix(relative, ".."+string(os.PathSeparator)) {
+		return errors.New("runtime log must be inside caller's log directory")
+	}
+	return nil
 }

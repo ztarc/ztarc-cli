@@ -8,7 +8,9 @@ import (
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/securefile"
 	"os"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"testing"
 )
 
@@ -87,4 +89,42 @@ func TestConcurrentStartPreservesActiveSocketAccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	next.Close()
+}
+
+func TestRuntimeIdentityCannotBeSuppliedByPayload(t *testing.T) {
+	for _, tc := range []struct {
+		uid       int
+		sudo, log string
+	}{
+		{1, "", "/var/log/ztarc-cli/client.log"},
+		{0, "1000", "/var/log/ztarc-cli/client.log"},
+		{1001, "1000", "/tmp/client.log"},
+		{0, "invalid", "/var/log/ztarc-cli/client.log"},
+		{0, "-1", "/var/log/ztarc-cli/client.log"},
+		{0, "", "/etc/sensitive"},
+	} {
+		if validateRuntimeCaller(tc.uid, tc.log, tc.sudo) == nil {
+			t.Fatalf("accepted forged runtime: %+v", tc)
+		}
+	}
+	if err := validateRuntimeCaller(0, "/var/log/ztarc-cli/client.log", ""); err != nil {
+		t.Fatal(err)
+	}
+	account, err := user.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	uid, err := strconv.Atoi(account.Uid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if uid != 0 {
+		good := filepath.Join(account.HomeDir, ".config", "ztarc-cli", "logs", "client.log")
+		if err := validateRuntimeCaller(uid, good, account.Uid); err != nil {
+			t.Fatal(err)
+		}
+		if validateRuntimeCaller(uid, filepath.Join(filepath.Dir(good), "..", "accounts.json"), account.Uid) == nil {
+			t.Fatal("allowed log escape")
+		}
+	}
 }

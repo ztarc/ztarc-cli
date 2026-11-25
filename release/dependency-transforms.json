@@ -26,5 +26,187 @@
     "to": "os.O_CREATE|os.O_WRONLY|os.O_APPEND|syscall.O_NOFOLLOW, 0o600",
     "count": 1,
     "reason": "Watchdog logs must be owner-only and must not follow a symlink; CLI supplies a root-controlled runtime log path"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/client.go",
+    "from": "\tif os.Getenv(\"SKIP_TLS_VERIFY\") == \"true\" {\n\t\tif tlsConfig == nil {\n\t\t\ttlsConfig = &tls.Config{}\n\t\t}\n\t\ttlsConfig.InsecureSkipVerify = true\n\t\tlogger.Debug(\"TLS certificate verification disabled via SKIP_TLS_VERIFY environment variable\")\n\t}",
+    "to": "\t// ZTARC always verifies TLS certificates.",
+    "count": 1,
+    "reason": "Require certificate verification including custom CA configurations"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/client.go",
+    "from": "\tif os.Getenv(\"SKIP_TLS_VERIFY\") == \"true\" {\n\t\tif dialer.TLSClientConfig == nil {\n\t\t\tdialer.TLSClientConfig = &tls.Config{}\n\t\t}\n\t\tdialer.TLSClientConfig.InsecureSkipVerify = true\n\t\tlogger.Debug(\"WebSocket TLS certificate verification disabled via SKIP_TLS_VERIFY environment variable\")\n\t}",
+    "to": "\t// ZTARC always verifies TLS certificates.",
+    "count": 1,
+    "reason": "Require certificate verification including custom CA configurations"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/client.go",
+    "from": "\tlogger.Debug(\"Token response body: %s\", string(body))",
+    "to": "\t// Authentication payload omitted from logs.",
+    "count": 1,
+    "reason": "Never log authentication tokens or credential payloads"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/client.go",
+    "from": "\tlogger.Debug(\"Received token: %s\", tokenResp.Data.Token)",
+    "to": "\t// Authentication payload omitted from logs.",
+    "count": 1,
+    "reason": "Never log authentication tokens or credential payloads"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/client.go",
+    "from": "\tbaseURL, err := url.Parse(c.baseURL)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"failed to parse base URL: %w\", err)\n\t}",
+    "to": "\tbaseURL, err := url.Parse(c.baseURL)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"failed to parse base URL: %w\", err)\n\t}\n if baseURL.Scheme != \"https\" && !(baseURL.Scheme == \"http\" && (baseURL.Hostname() == \"localhost\" || baseURL.Hostname() == \"127.0.0.1\" || baseURL.Hostname() == \"::1\")) { return \"\", fmt.Errorf(\"console endpoint requires HTTPS\") }",
+    "count": 1,
+    "reason": "Reject cleartext control-plane traffic outside loopback development"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/client.go",
+    "from": "\tbaseURL, err := url.Parse(c.baseURL)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to parse base URL: %w\", err)\n\t}",
+    "to": "\tbaseURL, err := url.Parse(c.baseURL)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to parse base URL: %w\", err)\n\t}\n if baseURL.Scheme != \"https\" && !(baseURL.Scheme == \"http\" && (baseURL.Hostname() == \"localhost\" || baseURL.Hostname() == \"127.0.0.1\" || baseURL.Hostname() == \"::1\")) { return fmt.Errorf(\"console endpoint requires HTTPS\") }",
+    "count": 1,
+    "reason": "Reject cleartext control-plane traffic outside loopback development"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/websocket/client.go",
+    "from": "\tif os.Getenv(\"SKIP_TLS_VERIFY\") == \"true\" {\n\t\tif tlsConfig == nil {\n\t\t\ttlsConfig = &tls.Config{}\n\t\t}\n\t\ttlsConfig.InsecureSkipVerify = true\n\t\tlogger.Debug(\"websocket: TLS certificate verification disabled via SKIP_TLS_VERIFY environment variable\")\n\t}",
+    "to": "\t// ZTARC always verifies TLS certificates.",
+    "count": 1,
+    "reason": "Require certificate verification including custom CA configurations"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/websocket/client.go",
+    "from": "\tif os.Getenv(\"SKIP_TLS_VERIFY\") == \"true\" {\n\t\tif dialer.TLSClientConfig == nil {\n\t\t\tdialer.TLSClientConfig = &tls.Config{}\n\t\t}\n\t\tdialer.TLSClientConfig.InsecureSkipVerify = true\n\t\tlogger.Debug(\"websocket: WebSocket TLS certificate verification disabled via SKIP_TLS_VERIFY environment variable\")\n\t}",
+    "to": "\t// ZTARC always verifies TLS certificates.",
+    "count": 1,
+    "reason": "Require certificate verification including custom CA configurations"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/websocket/client.go",
+    "from": "\tlogger.Debug(\"websocket: Requesting token from %s with body: %s\", req.URL.String(), string(jsonData))",
+    "to": "\t// Authentication payload omitted from logs.",
+    "count": 1,
+    "reason": "Never log authentication tokens or credential payloads"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/websocket/client.go",
+    "from": "\tlogger.Debug(\"websocket: Received token: %s\", tokenResp.Data.Token)",
+    "to": "\t// Authentication payload omitted from logs.",
+    "count": 1,
+    "reason": "Never log authentication tokens or credential payloads"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/websocket/client.go",
+    "from": "\tbaseURL, err := url.Parse(c.baseURL)\n\tif err != nil {\n\t\treturn \"\", nil, \"\", fmt.Errorf(\"failed to parse base URL: %w\", err)\n\t}",
+    "to": "\tbaseURL, err := url.Parse(c.baseURL)\n\tif err != nil {\n\t\treturn \"\", nil, \"\", fmt.Errorf(\"failed to parse base URL: %w\", err)\n\t}\n if baseURL.Scheme != \"https\" && !(baseURL.Scheme == \"http\" && (baseURL.Hostname() == \"localhost\" || baseURL.Hostname() == \"127.0.0.1\" || baseURL.Hostname() == \"::1\")) { return \"\", nil, \"\", fmt.Errorf(\"console endpoint requires HTTPS\") }",
+    "count": 1,
+    "reason": "Reject cleartext control-plane traffic outside loopback development"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/websocket/client.go",
+    "from": "\tbaseURL, err := url.Parse(c.baseURL)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to parse base URL: %w\", err)\n\t}",
+    "to": "\tbaseURL, err := url.Parse(c.baseURL)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to parse base URL: %w\", err)\n\t}\n if baseURL.Scheme != \"https\" && !(baseURL.Scheme == \"http\" && (baseURL.Hostname() == \"localhost\" || baseURL.Hostname() == \"127.0.0.1\" || baseURL.Hostname() == \"::1\")) { return fmt.Errorf(\"console endpoint requires HTTPS\") }",
+    "count": 1,
+    "reason": "Reject cleartext control-plane traffic outside loopback development"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/config.go",
+    "from": "\tif os.Getenv(\"SKIP_TLS_VERIFY\") == \"true\" {\n\t\tif tlsCfg == nil {\n\t\t\ttlsCfg = &tls.Config{}\n\t\t}\n\t\ttlsCfg.InsecureSkipVerify = true\n\t\tlogger.Debug(\"TLS certificate verification disabled for provisioning via SKIP_TLS_VERIFY\")\n\t}",
+    "to": "\t// ZTARC always verifies TLS certificates.",
+    "count": 1,
+    "reason": "Require verified provisioning TLS"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/newt/handlers.go",
+    "from": "n.client.RegisterHandler(\"newt/pam/connection\", func(msg websocket.WSMessage) {",
+    "to": "n.client.RegisterHandler(\"newt/pam/connection\", func(msg websocket.WSMessage) {\n if n.config.DisableSSH { return }",
+    "count": 1,
+    "reason": "Enforce deferred SSH boundary on remote messages, including browser gateway"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/newt/handlers.go",
+    "from": "n.client.RegisterHandler(\"newt/browsergateway/add\", func(msg websocket.WSMessage) {",
+    "to": "n.client.RegisterHandler(\"newt/browsergateway/add\", func(msg websocket.WSMessage) {\n if n.config.DisableSSH { return }",
+    "count": 1,
+    "reason": "Enforce deferred SSH boundary on remote messages, including browser gateway"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/newt/handlers.go",
+    "from": "n.client.RegisterHandler(\"newt/browsergateway/remove\", func(msg websocket.WSMessage) {",
+    "to": "n.client.RegisterHandler(\"newt/browsergateway/remove\", func(msg websocket.WSMessage) {\n if n.config.DisableSSH { return }",
+    "count": 1,
+    "reason": "Enforce deferred SSH boundary on remote messages, including browser gateway"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/config.go",
+    "from": "func (c *Client) saveConfig() error {\n\tif !c.configNeedsSave {\n\t\tlogger.Debug(\"Config has not changed, skipping save\")\n\t\treturn nil\n\t}\n\n\tconfigPath := getConfigPath(c.clientType, c.configFilePath)\n\n\texisting := map[string]interface{}{}\n\tif data, err := os.ReadFile(configPath); err == nil && len(bytes.TrimSpace(data)) > 0 {\n\t\tif err := json.Unmarshal(data, &existing); err != nil {\n\t\t\tlogger.Warn(\"Existing config file at %s is not valid JSON, other settings in it will be lost: %v\", configPath, err)\n\t\t\texisting = map[string]interface{}{}\n\t\t}\n\t}\n\n\texisting[\"id\"] = c.config.ID\n\texisting[\"secret\"] = c.config.Secret\n\texisting[\"endpoint\"] = c.config.Endpoint\n\n\tsetOrDelete := func(key, value string) {\n\t\tif value != \"\" {\n\t\t\texisting[key] = value\n\t\t} else {\n\t\t\tdelete(existing, key)\n\t\t}\n\t}\n\tsetOrDelete(\"tlsClientCert\", c.config.TlsClientCert)\n\tsetOrDelete(\"provisioningKey\", c.config.ProvisioningKey)\n\tsetOrDelete(\"name\", c.config.Name)\n\n\tdata, err := json.MarshalIndent(existing, \"\", \"  \")\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tlogger.Info(\"Saving config to: %s\", configPath)\n\terr = os.WriteFile(configPath, data, 0644)\n\tif err == nil {\n\t\tc.configNeedsSave = false // Reset flag after successful save\n\t}\n\treturn err\n}\n\n",
+    "to": "// CLI/service enrollment owns credential persistence. The engine must not write site secrets.\nfunc (c *Client) saveConfig() error { return nil }\n\n",
+    "count": 1,
+    "reason": "Remove unsafe fallback credential persistence; CLI owns securely enrolled configuration"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/client.go",
+    "from": "&http.Client{",
+    "to": "&http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error { if len(via) >= 10 || req.URL.Scheme != via[0].URL.Scheme || req.URL.Host != via[0].URL.Host { return fmt.Errorf(\"unsafe control-plane redirect\") }; return nil },",
+    "count": 1,
+    "reason": "Reject cross-origin and downgrade redirects carrying authentication"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/websocket/client.go",
+    "from": "dialer := websocket.DefaultDialer",
+    "to": "dialerCopy := *websocket.DefaultDialer\n dialer := &dialerCopy",
+    "count": 1,
+    "reason": "Keep connection TLS settings isolated"
+  },
+  {
+    "path": "vendor/github.com/fosrl/olm/websocket/client.go",
+    "from": "&http.Client{",
+    "to": "&http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error { if len(via) >= 10 || req.URL.Scheme != via[0].URL.Scheme || req.URL.Host != via[0].URL.Host { return fmt.Errorf(\"unsafe control-plane redirect\") }; return nil },",
+    "count": 1,
+    "reason": "Reject cross-origin and downgrade redirects carrying authentication"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/newt/handlers.go",
+    "from": "InsecureSkipVerify: true",
+    "to": "InsecureSkipVerify: false",
+    "count": 1,
+    "reason": "Verify remote auth-daemon certificates even though Stage A rejects this handler"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/browsergateway/ssh.go",
+    "from": "InsecureSkipVerify: true",
+    "to": "InsecureSkipVerify: false",
+    "count": 1,
+    "reason": "Disable deferred gateway TLS and WebSocket origin verification bypasses"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/browsergateway/vnc.go",
+    "from": "InsecureSkipVerify: true",
+    "to": "InsecureSkipVerify: false",
+    "count": 1,
+    "reason": "Disable deferred gateway TLS and WebSocket origin verification bypasses"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/browsergateway/rdp.go",
+    "from": "InsecureSkipVerify: true",
+    "to": "InsecureSkipVerify: false",
+    "count": 2,
+    "reason": "Disable deferred gateway TLS and WebSocket origin verification bypasses"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/authdaemon/connection.go",
+    "from": "\"github.com/fosrl/newt/logger\"",
+    "to": "\"github.com/fosrl/newt/logger\"\n \"regexp\"",
+    "count": 1,
+    "reason": "Validate auth-daemon usernames"
+  },
+  {
+    "path": "vendor/github.com/fosrl/newt/authdaemon/connection.go",
+    "from": "func (s *Server) ProcessConnection(req ConnectionRequest) {",
+    "to": "func (s *Server) ProcessConnection(req ConnectionRequest) {\n if req.Username == \"root\" || !regexp.MustCompile(`^[a-z_][a-z0-9_-]{0,31}$`).MatchString(req.Username) { logger.Warn(\"auth-daemon: rejected invalid username\"); return }",
+    "count": 1,
+    "reason": "Reject privileged usernames, traversal, and option injection before any host writes"
   }
 ]

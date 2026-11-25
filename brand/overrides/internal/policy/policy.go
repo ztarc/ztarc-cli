@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/endpoint"
 	"github.com/fosrl/cli/internal/redact"
 	"github.com/fosrl/cli/internal/securefile"
 	"github.com/spf13/cobra"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -46,11 +48,11 @@ func SiteInput(args []string) error {
 	}
 	configSeen := false
 	for i, arg := range args {
-		key := strings.SplitN(arg, "=", 2)[0]
-		if strings.Contains(strings.ToLower(key), "blueprint") || key == "--provisioning-key" {
-			return errors.New("blueprint and provisioning inputs are deferred pending server enforcement")
+		key := strings.TrimLeft(strings.SplitN(arg, "=", 2)[0], "-")
+		if strings.Contains(strings.ToLower(key), "blueprint") || key == "provisioning-key" || key == "updown" || key == "pprof" || strings.HasPrefix(key, "ad-") {
+			return errors.New("blueprint, provisioning, SSH, updown, and pprof inputs are deferred")
 		}
-		if key == "--config-file" || key == "-config-file" {
+		if key == "config-file" {
 			if configSeen {
 				return errors.New("duplicate --config-file is ambiguous")
 			}
@@ -64,12 +66,12 @@ func SiteInput(args []string) error {
 			}
 		}
 	}
-	for _, name := range []string{"BLUEPRINT_FILE", "PROVISIONING_BLUEPRINT_FILE", "PROVISIONING_KEY"} {
+	for _, name := range []string{"BLUEPRINT_FILE", "PROVISIONING_BLUEPRINT_FILE", "PROVISIONING_KEY", "NEWT_PROVISIONING_KEY", "SITE_PROVISIONING_KEY", "UPDOWN_SCRIPT", "NEWT_PPROF_ENABLED", "SITE_PPROF_ENABLED", "AD_KEY", "AD_PRINCIPALS_FILE", "AD_CA_CERT_PATH", "AD_GENERATE_RANDOM_PASSWORD"} {
 		if os.Getenv(name) != "" {
-			return errors.New("blueprint and provisioning environment inputs are deferred")
+			return errors.New("blueprint, provisioning, SSH, updown, and pprof environment inputs are deferred")
 		}
 	}
-	b, err := securefile.Read(path, false)
+	b, err := securefile.Read(path, os.Geteuid() == 0)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
@@ -81,16 +83,25 @@ func SiteInput(args []string) error {
 		return errors.New("invalid site config JSON")
 	}
 	for key, value := range obj {
-		if key == "secret" {
+		if strings.EqualFold(key, "secret") {
 			var secret string
 			if json.Unmarshal(value, &secret) == nil {
 				redact.Register(secret)
 			}
 		}
 		normalized := strings.ToLower(strings.NewReplacer("_", "", "-", "").Replace(key))
-		if strings.Contains(normalized, "blueprint") || normalized == "provisioningkey" {
+		if strings.EqualFold(key, "endpoint") {
+			var raw string
+			if json.Unmarshal(value, &raw) != nil {
+				return errors.New("invalid site endpoint")
+			}
+			if err := endpoint.Validate(raw); err != nil {
+				return err
+			}
+		}
+		if strings.Contains(normalized, "blueprint") || normalized == "provisioningkey" || normalized == "updownscript" || normalized == "pprof" || strings.HasPrefix(normalized, "authdaemon") || normalized == "adpresharedkey" || normalized == "adprincipalsfile" || normalized == "adcacertpath" || normalized == "adgeneraterandompassword" {
 			if string(value) != "null" && string(value) != "\"\"" && string(value) != "false" {
-				return errors.New("blueprint and provisioning config inputs are deferred")
+				return errors.New("blueprint, provisioning, SSH, updown, and pprof config inputs are deferred")
 			}
 		}
 	}
@@ -103,15 +114,28 @@ func ValidateSiteCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		var data map[string]any
+		// Match the engine's case-insensitive JSON field decoding.
+		var data struct {
+			ID       string `json:"id"`
+			Secret   string `json:"secret"`
+			Endpoint string `json:"endpoint"`
+		}
 		if json.Unmarshal(b, &data) != nil {
 			return errors.New("invalid site config JSON")
 		}
-		for _, key := range []string{"id", "secret", "endpoint"} {
-			if v, ok := data[key].(string); !ok || v == "" {
+		for key, value := range map[string]string{"id": data.ID, "secret": data.Secret, "endpoint": data.Endpoint} {
+			if value == "" {
 				return fmt.Errorf("site config requires %s", key)
 			}
 		}
 		return SiteInput([]string{"--config-file", args[0]})
 	}}
+}
+
+// InterfaceName excludes option injection and Linux interface-name separators.
+func InterfaceName(name string) error {
+	if !regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,14}$`).MatchString(name) || name == "." || name == ".." {
+		return errors.New("invalid tunnel interface name")
+	}
+	return nil
 }
