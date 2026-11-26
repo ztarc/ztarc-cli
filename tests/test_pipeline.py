@@ -6,6 +6,9 @@ def module(name,path):
 pipeline=module('pipeline',ROOT/'scripts/ztarc.py')
 migration=module('migration',ROOT/'scripts/migrate-systemd.py')
 class PipelineTests(unittest.TestCase):
+ def test_machine_registration_transform_is_in_staged_source(self):
+  source=(pipeline.SRC/'cmd/up/client/client.go').read_text()
+  self.assertIn('OrgID:                             registrationOrg(orgID, userToken),',source)
  def test_source_pin_and_stage_determinism(self):
   pipeline.pin()
   def tree():return {str(p.relative_to(pipeline.SRC)):hashlib.sha256(p.read_bytes()).hexdigest() for p in pipeline.SRC.rglob('*') if p.is_file()}
