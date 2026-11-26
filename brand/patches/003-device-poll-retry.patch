@@ -1,0 +1,164 @@
+--- a/cmd/auth/login/login.go
++++ b/cmd/auth/login/login.go
+@@ -140,56 +140,12 @@
+ 		}
+ 	}()
+ 
+-	// Poll for verification (starts immediately, doesn't wait for Enter)
+-	pollInterval := 1 * time.Second
+-	startTime := time.Now()
+-	maxPollDuration := 5 * time.Minute
+-
+-	var token string
+-
+-	for {
+-		// print
+-		logger.Debug("Polling for device web auth verification...")
+-		// Check if code has expired
+-		if time.Now().After(expiresAt) {
+-			logger.Error("Device web auth code has expired")
+-			return "", fmt.Errorf("code expired. Please try again")
+-		}
+-
+-		// Check if we've exceeded max polling duration
+-		if time.Since(startTime) > maxPollDuration {
+-			logger.Error("Polling timed out after %v", maxPollDuration)
+-			return "", fmt.Errorf("polling timeout. Please try again")
+-		}
+-
+-		// Poll for verification status
+-		pollResp, message, err := api.PollDeviceWebAuth(loginClient, code)
+-		// print debug info
+-		logger.Debug("Polling response: %+v, message: %s, err: %v", pollResp, message, err)
+-		if err != nil {
+-			logger.Error("Error polling device web auth: %v", err)
+-			return "", fmt.Errorf("failed to poll device web auth: %w", err)
+-		}
+-
+-		// Check verification status
+-		if pollResp.Verified {
+-			token = pollResp.Token
+-			if token == "" {
+-				logger.Error("Verification succeeded but no token received")
+-				return "", fmt.Errorf("verification succeeded but no token received")
+-			}
+-			return token, nil
+-		}
+-
+-		// Check for expired or not found messages
+-		if message == "Code expired" || message == "Code not found" {
+-			logger.Error("Device web auth code has expired or not found")
+-			return "", fmt.Errorf("code expired or not found. Please try again")
+-		}
+-
+-		// Wait before next poll
+-		time.Sleep(pollInterval)
+-	}
++	// Poll immediately; transient throttling must not discard an approved code.
++	deadline := time.Now().Add(5 * time.Minute)
++	if expiresAt.Before(deadline) { deadline = expiresAt }
++	return awaitDeviceApproval(deadline, func() (*api.DeviceWebAuthPollResponse, string, error) {
++		return api.PollDeviceWebAuth(loginClient, code)
++	}, time.Now, time.Sleep)
+ }
+ 
+ type LoginCmdOpts struct {
+--- a/internal/api/client.go
++++ b/internal/api/client.go
+@@ -963,90 +963,96 @@
+ 		errorResp := createErrorResponse(apiResp, resp.StatusCode, getDeviceAuthErrorMessage)
+ 		return nil, errorResp
+ 	}
+ 
+ 	// Parse successful response data
+ 	if apiResp.Data != nil {
+ 		if err := json.Unmarshal(apiResp.Data, &response); err != nil {
+ 			return nil, fmt.Errorf("failed to unmarshal response data: %w", err)
+ 		}
+ 	}
+ 
+ 	return &response, nil
+ }
+ 
+ // PollDeviceWebAuth polls the server to check if the device code has been verified
+ // The client should have BaseURL set but no authentication token is required
+ func PollDeviceWebAuth(client *Client, code string) (*DeviceWebAuthPollResponse, string, error) {
+ 	var response DeviceWebAuthPollResponse
+ 
+ 	// Build URL
+ 	baseURL := buildAPIBaseURL(client.BaseURL)
+ 	endpoint := fmt.Sprintf("/auth/device-web-auth/poll/%s", url.PathEscape(code))
+ 	url := baseURL + endpoint
+ 
+ 	// Create request
+ 	if err := endpointpkg.Validate(url); err != nil { return nil, "", err }
+  httpReq, err := http.NewRequest(http.MethodGet, url, nil)
+ 	if err != nil {
+ 		return nil, "", fmt.Errorf("failed to create request: %w", err)
+ 	}
+ 
+ 	// Set headers
+ 	userAgent := getUserAgent(client.AgentName)
+ 	setJSONResponseHeaders(httpReq, userAgent)
+ 
+ 	client.Session.ApplyToRequest(httpReq)
+ 
+ 	// Execute request
+ 	httpClient := createHTTPClient(client.HTTPClient.Timeout)
+ 	resp, err := httpClient.Do(httpReq)
+ 	if err != nil {
+ 		return nil, "", fmt.Errorf("request failed: %w", err)
+ 	}
+ 	defer resp.Body.Close()
+ 
++	// A 429 can have an HTML/plain-text body. Classify by HTTP status first.
++	if resp.StatusCode == http.StatusTooManyRequests {
++		return nil, "", &DevicePollRateLimitError{Delay: devicePollRetryAfter(resp.Header.Get("Retry-After"), time.Now())}
++	}
++
++
+ 	// Read response body
+ 	bodyBytes, err := io.ReadAll(resp.Body)
+ 	if err != nil {
+ 		return nil, "", fmt.Errorf("failed to read response: %w", err)
+ 	}
+ 
+ 	// Parse the API response
+ 	apiResp, err := parseAPIResponseBody(bodyBytes)
+ 	if err != nil {
+ 		return nil, "", err
+ 	}
+ 
+ 	message := apiResp.Message
+ 
+ 	// Check if the response indicates an error
+ 	if apiResp.Error.Bool() || !apiResp.Success {
+ 		errorResp := createErrorResponse(apiResp, resp.StatusCode, getDeviceAuthErrorMessage)
+ 		return nil, message, errorResp
+ 	}
+ 
+ 	// Parse successful response data
+ 	if apiResp.Data != nil {
+ 		if err := json.Unmarshal(apiResp.Data, &response); err != nil {
+ 			return nil, message, fmt.Errorf("failed to unmarshal response data: %w", err)
+ 		}
+ 	}
+ 
+ 	return &response, message, nil
+ }
+ 
+ // ApplyBlueprint applies a blueprint for the given org. Behavior depends on [Client.Session]:
+ // user session clients use the app API with YAML in the body; integration API key clients use
+ // the integration host with a base64-encoded JSON payload. The name is only used for user
+ // session mode.
+ func (c *Client) ApplyBlueprint(orgID string, name string, blueprint string) (*ApplyBlueprintResponse, error) {
+  if err := endpointpkg.ValidateID(orgID); err != nil { return nil, err }
+ 	if strings.TrimSpace(orgID) == "" {
+ 		return nil, fmt.Errorf("org id is required")
+ 	}
+ 
+ 	path := fmt.Sprintf("/org/%s/blueprint", url.PathEscape(orgID))
+ 
+ 	if c.Session.IsIntegrationAPIKey() {
+ 		var parsed interface{}
+ 		if err := yaml.Unmarshal([]byte(blueprint), &parsed); err != nil {

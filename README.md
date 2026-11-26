@@ -2,7 +2,7 @@
 
 ZTARC distribution of Pangolin CLI 0.23.0, pinned to
 `bb03d2c45ce79213c4c9b206bbd87e9846be5a9a`. Product version:
-`0.23.0-ztarc.1`; Newt 1.20.1; Olm 1.10.2; Go 1.26.10.
+`0.23.0-ztarc.2`; Newt 1.20.1; Olm 1.10.2; Go 1.26.10.
 
 This repository implements development stages 0–3. Artifacts are candidates:
 Linux dataplane, reboot, container and 24-hour canary acceptance remain required.

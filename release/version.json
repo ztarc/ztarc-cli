@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "product": "ztarc-cli",
-  "version": "0.23.0-ztarc.1",
+  "version": "0.23.0-ztarc.2",
   "upstream": {
     "repository": "https://github.com/fosrl/cli",
     "version": "0.23.0",

@@ -48,3 +48,37 @@ launch requires those user directories to exist already.
 
 These boundaries apply to all packaged Stage A runtimes. They do not establish
 server authorization or satisfy the external console/server acceptance gates.
+
+
+## Linux amd64 user-client lab follow-up — 2026-11-26
+
+The original signed candidate at commit914a7975156af88b0937b58aa0aca0d5e8592a87
+failed interactive login whenever device polling returned HTTP429. The CLI exited
+before collecting the owner's completed device approval. Patch003 and the polling
+/API overrides now retry429 with Retry-After and bounded backoff until code expiry;
+non429 failures still stop. Full `make test` passed, including six new retry tests
+(the optional Docker installer test was skipped).
+
+An explicitly unsigned development binary `0.23.0-ztarc.1-dev.pollretry`, SHA256
+`ab9246c30abb977aac08167b84d04539cd9e88464ab844f4f626e6e348a37bdd`, ran on the
+owner's Linux amd64 VM192.168.57.250. Official owner-approved login succeeded for
+demo@ztarc.io/demo-tenant. Client22/100.90.128.2 connected through the existing
+signed-candidate Spoke192.168.57.200. At08:35:40UTC, HTTP by overlay IP/private
+hostname and UDP returned exact proof markers. Spoke forwarding logs and target
+peer192.168.57.200 proved tunnel traversal despite colocated client and target.
+Normal `down` removed the overlay route/interface, restored LAN DNS, and left
+HTTPS working; overlay access failed again as expected. Local accounts remained
+user-owned0700/0600. Runtime was stopped and the local user session retained.
+
+These results apply only to the development build, not to the signed candidate's
+user login. Review/sign a new candidate and retest its exact bytes before stable.
+No signed distribution bytes, stable pin, or default were modified. Owner skipped
+24-hour observation and connector migration/rollback tests; neither is marked
+passed. Other acceptance gates remain as listed above. Operational evidence lives
+in the companion console repository's deploy/evidence/cli-stage-a-client-20261126.json.
+
+## Signed retry-fix candidate
+
+Version `0.23.0-ztarc.2` contains the bounded device-approval HTTP 429 retry fix.
+The candidate must be built and signed from its clean commit by `candidate.yml`;
+the earlier development-binary smoke does not substitute for testing these bytes.

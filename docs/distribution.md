@@ -29,7 +29,7 @@ Bundles include certificate/signature/transparency evidence. Verifiers must
 configure the expected workflow identity/ref independently of downloaded files:
 
 ```sh
-export ZTARC_CERTIFICATE_IDENTITY='https://github.com/ORG/REPO/.github/workflows/candidate.yml@refs/tags/v0.23.0-ztarc.1'
+export ZTARC_CERTIFICATE_IDENTITY='https://github.com/ORG/REPO/.github/workflows/candidate.yml@refs/tags/v0.23.0-ztarc.2'
 export ZTARC_OIDC_ISSUER='https://token.actions.githubusercontent.com'
 scripts/verify-release.sh dist
 ```
