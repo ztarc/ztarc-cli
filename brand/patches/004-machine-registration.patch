@@ -1,0 +1,11 @@
+--- a/cmd/up/client/client.go
++++ b/cmd/up/client/client.go
+@@ -879,7 +879,7 @@
+ 	tunnelConfig := olmpkg.TunnelConfig{
+ 		Endpoint:                          endpoint,
+ 		ID:                                olmID,
+ 		Secret:                            olmSecret,
+-		OrgID:                             orgID,
++		OrgID:                             registrationOrg(orgID, userToken),
+ 		MTU:                               opts.MTU,
+ 		DNS:                               opts.DNS,
