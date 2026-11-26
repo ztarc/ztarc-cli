@@ -29,6 +29,20 @@ func TestStrictPolicyCannotLosePreviouslyRequiredSettings(t *testing.T) {
 		t.Fatal("network error became local fallback")
 	}
 }
+
+func TestRegistrationDistinguishesMachineAndUserSession(t *testing.T) {
+	for _, tc := range []struct{ name, org, token, want string }{
+		{"headless machine", "tenant", "", ""},
+		{"interactive user", "tenant", "user-session", "tenant"},
+		{"detached user snapshot", "other-tenant", "snapshot-session", "other-tenant"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := registrationOrg(tc.org, tc.token); got != tc.want {
+				t.Fatalf("registration org = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
 func TestSnapshotOversizeRejectedBeforeElevation(t *testing.T) {
 	cfg := config.RuntimeConfig(filepath.Join(t.TempDir(), "log"))
 	opts := &ClientUpCmdOpts{Secret: string(make([]byte, securefile.MaxSize+1))}

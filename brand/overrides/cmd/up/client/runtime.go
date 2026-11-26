@@ -217,6 +217,16 @@ func refreshStrict(fetch func(string) (*config.ClientSettings, error), store *co
 
 func controlUID() int { return olm.ControlUID() }
 
+// EE 1.26 uses a nonempty registration org as the user-device discriminator.
+// Machine policy still checks the selected org before starting the engine; its
+// credential-authenticated Olm is already bound to one native client/org.
+func registrationOrg(org, userToken string) string {
+	if userToken == "" {
+		return ""
+	}
+	return org
+}
+
 // A previously successful policy fetch makes later disappearance a hard failure.
 // Machine services use durable root state; interactive starts use CLI user state.
 func machinePolicyMarker(endpoint, id, org string) (string, error) {

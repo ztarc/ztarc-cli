@@ -1,0 +1,6 @@
+diff --git a/cmd/up/client/client.go b/cmd/up/client/client.go
+--- a/cmd/up/client/client.go
++++ b/cmd/up/client/client.go
+@@ -924,1 +924,1 @@
+-		OrgID:                             orgID,
++		OrgID:                             registrationOrg(orgID, userToken),
